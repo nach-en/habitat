@@ -42,3 +42,6 @@ yarn-error.*
 
 # Supabase / secretos
 .env
+
+# Skia web (se copia con `npm run web`)
+public/canvaskit.wasm

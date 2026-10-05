@@ -2,15 +2,21 @@ import { create } from 'zustand';
 import { subDays } from 'date-fns';
 import type { DayKey, Habit } from '@/types';
 import { toKey as key } from '@/lib/dates';
+import { isScheduled } from '@/lib/frequency';
 
-type HabitsState = {
+type HabitsData = {
   habits: Habit[];
   /** habitId → días hechos. */
   logs: Record<string, Set<DayKey>>;
 };
 
+type HabitsState = HabitsData & {
+  /** Marca o desmarca `day` para el hábito. */
+  toggleLog: (habitId: string, day: DayKey) => void;
+};
+
 // Datos de ejemplo en memoria (hito 1). Se sustituyen por Supabase en el hito 5.
-function sampleData(today: Date): HabitsState {
+function sampleData(today: Date): HabitsData {
   const habits: Habit[] = [
     {
       id: 'sample-water',
@@ -53,17 +59,32 @@ function sampleData(today: Date): HabitsState {
     },
   ];
 
-  // Patrón determinista para que las cuadrículas tengan algo que mostrar.
+  // Patrón pseudoaleatorio determinista (~75 % de días hechos) para que las
+  // cuadrículas tengan algo que mostrar.
+  let seed = 7;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const logs: Record<string, Set<DayKey>> = {};
-  habits.forEach((h, hi) => {
+  for (const h of habits) {
     const set = new Set<DayKey>();
     for (let i = 1; i <= 140; i++) {
-      if ((i * (hi + 3)) % 7 < 5) set.add(key(subDays(today, i)));
+      const day = subDays(today, i);
+      if (h.frequency === 'days' && !isScheduled(h, day)) continue;
+      if (rand() < (h.frequency === 'week' ? 0.55 : 0.75)) set.add(key(day));
     }
     logs[h.id] = set;
-  });
+  }
 
   return { habits, logs };
 }
 
-export const useHabits = create<HabitsState>()(() => sampleData(new Date()));
+export const useHabits = create<HabitsState>()((set) => ({
+  ...sampleData(new Date()),
+
+  toggleLog: (habitId, day) =>
+    set((s) => {
+      const next = new Set(s.logs[habitId]);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return { logs: { ...s.logs, [habitId]: next } };
+    }),
+}));

@@ -27,3 +27,13 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Contador de cabecera** ("hechos hoy / pendientes hoy"): `daily`/`days` cuentan si hoy está programado; `week` cuenta si ya se hizo hoy o aún no se ha alcanzado el objetivo semanal. Los hábitos creados en el futuro no cuentan.
 - **Toques en la cuadrícula**: `cellAt` asigna los toques en el hueco entre celdas a la celda anterior (más fácil de acertar en un canvas denso).
 - Los tests usan fechas fijas (hoy = miércoles 2026-10-07) y pasan con distintas zonas horarias (UTC, Los Ángeles, Auckland).
+
+## Hito 3 · Tarjeta y cuadrícula
+
+- **Skia en web**: `HabitGrid.web.tsx` carga CanvasKit en diferido (`WithSkiaWeb`) antes de importar `HabitGridCanvas`; en nativo `HabitGrid.tsx` lo reexporta directamente. `npm run web` copia `canvaskit.wasm` a `public/` (ignorado en git).
+- **Toques en la cuadrícula**: un `Pressable` envuelve el canvas y la celda se calcula con `cellAt` a partir de la posición del toque (en web, `offsetX/Y` porque el click no trae `locationX/Y`). Sin gesture-handler.
+- **"Hoy"**: `useToday()` devuelve la clave del día y se actualiza a medianoche y al volver la app a primer plano.
+- **Aspecto de celdas**: `before` es un punto de radio ≈ 8 % de la celda en `cell-faint`; el borde de hoy es de 1,5 pt en blanco/negro al 55 %.
+- **Check**: sin marcar, fondo del color al 12 % y borde al 45 %; marcado, relleno del color con el tick en el color de la tarjeta. Animación de escala 0,86 → 1 (muelle), desactivada con "reducir movimiento".
+- **Estadísticas**: "Racha N d" / "Mejor N d" (o `sem` en semanales) y "n/N esta semana".
+- **Datos de ejemplo**: patrón pseudoaleatorio determinista que respeta los días programados.
