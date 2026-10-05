@@ -16,3 +16,14 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Datos de ejemplo**: 3 hábitos (uno de cada frecuencia) con registros deterministas, en memoria, en `src/store/habits.ts`.
 - **Fondo de tarjeta**: el "color al 6 % sobre la superficie" se calcula como color sólido mezclado (`blend`) en lugar de una capa con transparencia.
 - **Verificación**: Xcode 26.3 necesita la plataforma iOS 26.x, que no está instalada (solo hay simuladores de iOS 17). El hito 1 se verificó en web (`expo start --web`).
+
+## Hito 2 · Lógica pura
+
+- Se añade **`src/lib/frequency.ts`** (no estaba en la estructura) con `isScheduled`, `weekCount`, `isDueToday` y `todayCounts`, que usan tanto `streaks.ts` como `grid.ts` y la cabecera.
+- `cellState` está en `grid.ts`. Devuelve el estado base; el borde de "hoy" lo decide quien dibuja.
+- Los **registros en días no programados** (tipo `days`) se dibujan como `done` pero no suman a la racha ni la rompen.
+- Los **registros anteriores a `created_on`** se ignoran (celda `before`, no cuentan en rachas).
+- **Semana de creación** (tipo `week`): solo cuentan los días desde `created_on`. Si no llega al objetivo no suma, pero como es la primera semana tampoco "rompe" nada.
+- **Contador de cabecera** ("hechos hoy / pendientes hoy"): `daily`/`days` cuentan si hoy está programado; `week` cuenta si ya se hizo hoy o aún no se ha alcanzado el objetivo semanal. Los hábitos creados en el futuro no cuentan.
+- **Toques en la cuadrícula**: `cellAt` asigna los toques en el hueco entre celdas a la celda anterior (más fácil de acertar en un canvas denso).
+- Los tests usan fechas fijas (hoy = miércoles 2026-10-07) y pasan con distintas zonas horarias (UTC, Los Ángeles, Auckland).

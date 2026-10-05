@@ -1,14 +1,13 @@
 import { create } from 'zustand';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import type { DayKey, Habit } from '@/types';
+import { toKey as key } from '@/lib/dates';
 
 type HabitsState = {
   habits: Habit[];
   /** habitId → días hechos. */
   logs: Record<string, Set<DayKey>>;
 };
-
-const key = (d: Date): DayKey => format(d, 'yyyy-MM-dd');
 
 // Datos de ejemplo en memoria (hito 1). Se sustituyen por Supabase en el hito 5.
 function sampleData(today: Date): HabitsState {

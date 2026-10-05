@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useHabits } from '@/store/habits';
 import { iconName } from '@/components/icons';
+import { todayCounts } from '@/lib/frequency';
 import { blend, sizes, useTokens, withAlpha } from '@/theme/tokens';
 import type { Habit } from '@/types';
 
@@ -16,9 +17,7 @@ export default function HomeScreen() {
   const logs = useHabits((s) => s.logs);
 
   const today = new Date();
-  const todayKey = format(today, 'yyyy-MM-dd');
-  const done = habits.filter((h) => logs[h.id]?.has(todayKey)).length;
-  const pending = habits.length - done;
+  const { done, pending } = todayCounts(habits, logs, today);
 
   return (
     <View className="flex-1 bg-bg">
