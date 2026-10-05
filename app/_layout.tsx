@@ -38,8 +38,8 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" />
-        <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="habit/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="habit/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

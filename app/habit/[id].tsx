@@ -1,15 +1,47 @@
 import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { closeSheet } from '@/lib/navigation';
+import { HabitForm } from '@/components/HabitForm';
+import { confirmDestructive } from '@/lib/confirm';
 import { useHabits } from '@/store/habits';
 
-// Provisional: el formulario de edición llega en el hito 4.
 export default function EditHabitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const habit = useHabits((s) => s.habits.find((h) => h.id === id));
+  const updateHabit = useHabits((s) => s.updateHabit);
+  const deleteHabit = useHabits((s) => s.deleteHabit);
+
+  if (!habit) {
+    return (
+      <View className="flex-1 items-center justify-center bg-bg p-6">
+        <Text className="font-sans text-base text-muted">Este hábito ya no existe.</Text>
+      </View>
+    );
+  }
+
+  const { id: _id, createdOn: _createdOn, ...initial } = habit;
+
+  const onDelete = async () => {
+    const ok = await confirmDestructive(
+      `¿Eliminar «${habit.name}»?`,
+      'Se borrará también todo su historial. No se puede deshacer.',
+      'Eliminar',
+    );
+    if (!ok) return;
+    closeSheet();
+    deleteHabit(habit.id);
+  };
+
   return (
-    <View className="flex-1 items-center justify-center bg-bg p-6">
-      <Text className="font-medium text-lg text-text">{habit?.name ?? 'Hábito no encontrado'}</Text>
-      <Text className="font-sans text-muted mt-1">Edición en el hito 4.</Text>
-    </View>
+    <HabitForm
+      title="Editar hábito"
+      initial={initial}
+      onCancel={() => closeSheet()}
+      onSubmit={(input) => {
+        updateHabit(habit.id, input);
+        closeSheet();
+      }}
+      onDelete={onDelete}
+    />
   );
 }

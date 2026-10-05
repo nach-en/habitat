@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { randomUUID } from 'expo-crypto';
 import { subDays } from 'date-fns';
 import type { DayKey, Habit } from '@/types';
 import { toKey as key } from '@/lib/dates';
@@ -10,9 +11,16 @@ type HabitsData = {
   logs: Record<string, Set<DayKey>>;
 };
 
+/** Campos editables de un hábito (lo demás lo pone el store). */
+export type HabitInput = Omit<Habit, 'id' | 'createdOn'>;
+
 type HabitsState = HabitsData & {
   /** Marca o desmarca `day` para el hábito. */
   toggleLog: (habitId: string, day: DayKey) => void;
+  /** Crea un hábito con `created_on` = hoy y devuelve su id. */
+  addHabit: (input: HabitInput) => string;
+  updateHabit: (id: string, input: HabitInput) => void;
+  deleteHabit: (id: string) => void;
 };
 
 // Datos de ejemplo en memoria (hito 1). Se sustituyen por Supabase en el hito 5.
@@ -86,5 +94,20 @@ export const useHabits = create<HabitsState>()((set) => ({
       if (next.has(day)) next.delete(day);
       else next.add(day);
       return { logs: { ...s.logs, [habitId]: next } };
+    }),
+
+  addHabit: (input) => {
+    const habit: Habit = { ...input, id: randomUUID(), createdOn: key(new Date()) };
+    set((s) => ({ habits: [...s.habits, habit], logs: { ...s.logs, [habit.id]: new Set() } }));
+    return habit.id;
+  },
+
+  updateHabit: (id, input) =>
+    set((s) => ({ habits: s.habits.map((h) => (h.id === id ? { ...h, ...input } : h)) })),
+
+  deleteHabit: (id) =>
+    set((s) => {
+      const { [id]: _removed, ...logs } = s.logs;
+      return { habits: s.habits.filter((h) => h.id !== id), logs };
     }),
 }));

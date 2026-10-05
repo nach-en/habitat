@@ -37,3 +37,14 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Check**: sin marcar, fondo del color al 12 % y borde al 45 %; marcado, relleno del color con el tick en el color de la tarjeta. Animación de escala 0,86 → 1 (muelle), desactivada con "reducir movimiento".
 - **Estadísticas**: "Racha N d" / "Mejor N d" (o `sem` en semanales) y "n/N esta semana".
 - **Datos de ejemplo**: patrón pseudoaleatorio determinista que respeta los días programados.
+
+## Hito 4 · Formulario
+
+- **Plataforma objetivo**: Android (primero como webapp y después como APK). Por eso todo el formulario usa componentes que funcionan igual en Android y en web.
+- **Hoja**: `presentation: 'modal'` con `animation: 'slide_from_bottom'` (en Android sube desde abajo; en web es una página). Barra propia con "Cancelar · título · Guardar".
+- **Hora del recordatorio**: dos selectores −/+ (hora de 1 en 1, minutos de 5 en 5) en lugar de un selector nativo de hora, que no existe en web.
+- **Validación** (`src/lib/validation.ts`, con tests): nombre obligatorio (máx. 40), descripción opcional (máx. 80), `days` necesita al menos un día, `week` entre 1 y 7 veces. Los errores se muestran al intentar guardar.
+- **Confirmación de borrado**: `Alert.alert` en nativo y `window.confirm` en web (`src/lib/confirm.ts` / `.web.ts`), porque en web `Alert` no muestra botones.
+- **Editar** no cambia `created_on` ni borra registros; si cambia la frecuencia, rachas y cuadrícula se recalculan con la nueva.
+- **IDs** con `expo-crypto` `randomUUID()` (UUID v4, compatible con la columna `uuid` de Supabase).
+- **Cerrar la hoja** (`closeSheet`): si no hay historial (URL abierta directamente en web), vuelve a `/`.
