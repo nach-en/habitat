@@ -1,4 +1,4 @@
-import { canToggle, cellAt, cellState, gridColumns, gridLayout } from '@/lib/grid';
+import { canToggle, cellAt, cellState, cellStateLabel, gridColumns, gridLayout, stepFocusDay } from '@/lib/grid';
 import { dow, toKey } from '@/lib/dates';
 import { d, habit, logs } from './helpers';
 
@@ -93,5 +93,21 @@ describe('gridLayout y cellAt', () => {
     expect(cellAt(-1, 5, layout)).toBeNull();
     expect(cellAt(layout.width + 5, 5, layout)).toBeNull();
     expect(cellAt(5, layout.height + 5, layout)).toBeNull();
+  });
+});
+
+describe('stepFocusDay', () => {
+  const first = d('2026-10-01');
+  it('avanza y retrocede sin salir del rango', () => {
+    expect(toKey(stepFocusDay(d('2026-10-03'), 1, first, today))).toBe('2026-10-04');
+    expect(toKey(stepFocusDay(d('2026-10-01'), -1, first, today))).toBe('2026-10-01');
+    expect(toKey(stepFocusDay(today, 1, first, today))).toBe('2026-10-07');
+  });
+});
+
+describe('cellStateLabel', () => {
+  it('da un texto para cada estado', () => {
+    expect(cellStateLabel('done')).toBe('hecho');
+    expect(cellStateLabel('missed')).toBe('no hecho');
   });
 });

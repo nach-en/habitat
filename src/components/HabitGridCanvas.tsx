@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Pressable, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
+import {
+  Pressable,
+  type AccessibilityActionEvent,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from 'react-native';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Canvas, Circle, Group, RoundedRect } from '@shopify/react-native-skia';
-import { canToggle, cellAt, cellState, gridColumns, gridLayout } from '@/lib/grid';
+import { canToggle, cellAt, cellState, cellStateLabel, gridColumns, gridLayout, stepFocusDay } from '@/lib/grid';
 import { fromKey, toKey } from '@/lib/dates';
 import { sizes, useTokens, withAlpha } from '@/theme/tokens';
 import type { CellState, DayKey, Habit } from '@/types';
@@ -46,6 +53,30 @@ export default function HabitGridCanvas({
     return out;
   }, [columns, layout, habit, logs, todayDate, today]);
 
+  // Lector de pantalla: la cuadrícula es un control ajustable que recorre los días.
+  const [focusKey, setFocusKey] = useState(today);
+  const firstDay = useMemo(() => {
+    const created = fromKey(habit.createdOn);
+    const firstVisible = columns[0]![0]!;
+    return created > firstVisible ? created : firstVisible;
+  }, [habit.createdOn, columns]);
+  const focusDay = stepFocusDay(fromKey(focusKey), 0, firstDay, todayDate);
+  const focusText = `${format(focusDay, "EEEE d 'de' MMMM", { locale: es })}: ${cellStateLabel(
+    cellState(habit, focusDay, logs, todayDate),
+  )}`;
+
+  const onAccessibilityAction = (e: AccessibilityActionEvent) => {
+    switch (e.nativeEvent.actionName) {
+      case 'increment':
+      case 'decrement':
+        setFocusKey(toKey(stepFocusDay(focusDay, e.nativeEvent.actionName === 'increment' ? 1 : -1, firstDay, todayDate)));
+        break;
+      case 'activate':
+        if (canToggle(habit, focusDay, todayDate)) onToggleDay(toKey(focusDay));
+        break;
+    }
+  };
+
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
   const onPress = (e: GestureResponderEvent) => {
@@ -70,7 +101,12 @@ export default function HabitGridCanvas({
       onLayout={onLayout}
       onPress={onPress}
       style={{ height: layout.height || undefined }}
-      accessibilityLabel={`Historial de ${habit.name}. Toca un día para marcarlo o desmarcarlo.`}
+      accessibilityRole="adjustable"
+      accessibilityLabel={`Historial de ${habit.name}`}
+      accessibilityValue={{ text: focusText }}
+      accessibilityHint="Desliza arriba o abajo para cambiar de día. Toca dos veces para marcarlo o desmarcarlo."
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }, { name: 'activate' }]}
+      onAccessibilityAction={onAccessibilityAction}
     >
       {width > 0 && (
         <Canvas style={{ width, height: layout.height }}>

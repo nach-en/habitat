@@ -68,3 +68,13 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Permiso**: se pide al activar el interruptor por primera vez. Si se deniega, el interruptor vuelve a apagado y aparece un aviso con "Abrir ajustes" (`Linking.openSettings`). Si el permiso se retira después, los recordatorios simplemente no se programan.
 - **Android**: canal "Recordatorios" con importancia alta. Al cerrar sesión se cancelan todos.
 - **Verificado en Android 14 (emulador)**: permiso pedido al activar el interruptor, notificación recibida a la hora (Android la entregó con ~3 min de margen, por ser alarma inexacta), reprogramada para el día siguiente y cancelada al eliminar el hábito. El icono de la notificación es el genérico hasta el hito 7.
+
+## Hito 7 · Pulido
+
+- **Logo**: cuadrícula 3×3 como la de los hábitos; los siete colores forman una **H** y las dos celdas restantes quedan tenues (días sin marcar). Fondo `#0b0f10`. Fuente en `assets/brand/` (`logo.svg` y `make-icons.js`, que genera todas las variantes con resvg).
+- **Variantes**: icono 1024, icono adaptativo Android (primer plano dentro de la zona segura, fondo oscuro y versión monocroma para iconos temáticos), icono de notificación blanco 96 px tintado con `#8b8cf5`, splash solo con la H sobre `#eceff0` / `#0b0f10` según el modo, favicon e iconos PWA (192, 512 y maskable).
+- **Webapp instalable**: `public/manifest.json` y `public/index.html` (idioma `es`, `theme-color` por modo, fondo sin destello blanco). En Android, Chrome permite "Añadir a pantalla de inicio" y se abre a pantalla completa. (`+html.tsx` no sirve aquí: solo se usa con exportación estática.)
+- **Modo claro/oscuro en Android**: `expo-system-ui`, necesario para que `userInterfaceStyle: automatic` funcione.
+- **Accesibilidad de la cuadrícula**: como es un único canvas, se expone como control *ajustable*: el lector de pantalla anuncia "Historial de X, lunes 5 de octubre: hecho"; deslizar arriba/abajo cambia de día (sin salir de `created_on`…hoy) y tocar dos veces marca o desmarca. El check ya anunciaba su estado.
+- **Errores de red**: además del aviso de sincronización y del error de carga inicial, si falla una recarga con hábitos ya en pantalla aparece un aviso. Deslizar hacia abajo recarga.
+- **EAS**: `eas.json` con perfil `preview` que genera un APK (`buildType: apk`).

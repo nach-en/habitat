@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -34,6 +34,15 @@ export default function HomeScreen() {
       <FlatList
         data={habits}
         keyExtractor={(h) => h.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={status === 'loading' && habits.length > 0}
+            onRefresh={reload}
+            tintColor={t.muted}
+            colors={[t.text]}
+            progressBackgroundColor={t.card}
+          />
+        }
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingBottom: insets.bottom + 120,
@@ -62,6 +71,9 @@ export default function HomeScreen() {
               </Pressable>
             </View>
             {syncError && <Banner text={syncError} />}
+            {status === 'error' && habits.length > 0 && (
+              <Banner text={`No se pudieron actualizar tus hábitos (${loadError}). Desliza hacia abajo para reintentar.`} />
+            )}
           </View>
         }
         ListEmptyComponent={

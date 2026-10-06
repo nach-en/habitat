@@ -50,3 +50,27 @@ export function cellAt(
   // Tolerancia: un toque en el hueco cuenta para la celda anterior.
   return { col, row };
 }
+
+const STATE_LABELS: Record<CellState, string> = {
+  done: 'hecho',
+  missed: 'no hecho',
+  idle: 'sin marcar',
+  before: 'antes de crear el hábito',
+  future: 'futuro',
+};
+
+/** Texto del estado de una celda para el lector de pantalla. */
+export function cellStateLabel(state: CellState): string {
+  return STATE_LABELS[state];
+}
+
+/**
+ * Día enfocado tras mover `delta` días desde `day`, sin salir del rango que se
+ * puede alternar (de `created_on`, o del primer día visible, hasta hoy).
+ */
+export function stepFocusDay(day: Date, delta: number, first: Date, today: Date): Date {
+  const next = addDays(day, delta);
+  if (daysBetween(first, next) < 0) return first;
+  if (daysBetween(next, today) < 0) return today;
+  return next;
+}

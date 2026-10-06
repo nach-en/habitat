@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0b0f10",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -22,14 +22,36 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "name": "Habitat",
+      "shortName": "Habitat",
+      "themeColor": "#0b0f10",
+      "backgroundColor": "#0b0f10"
     },
     "plugins": [
       "expo-router",
       "expo-status-bar",
       "expo-font",
-      "expo-splash-screen",
-      "expo-notifications"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120,
+          "resizeMode": "contain",
+          "backgroundColor": "#eceff0",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#0b0f10"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#8b8cf5"
+        }
+      ]
     ],
     "scheme": "habitat",
     "experiments": {
