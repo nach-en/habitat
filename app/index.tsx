@@ -1,6 +1,6 @@
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -20,6 +20,10 @@ export default function HomeScreen() {
   const habits = useHabits((s) => s.habits);
   const logs = useHabits((s) => s.logs);
   const toggleLog = useHabits((s) => s.toggleLog);
+  const status = useHabits((s) => s.status);
+  const loadError = useHabits((s) => s.loadError);
+  const syncError = useHabits((s) => s.sync.error);
+  const reload = useHabits((s) => s.reload);
 
   const todayKey = useToday();
   const today = fromKey(todayKey);
@@ -38,19 +42,52 @@ export default function HomeScreen() {
           flexGrow: 1,
         }}
         ListHeaderComponent={
-          <View className="mb-2">
-            <Text className="font-bold text-3xl text-text">Habitat</Text>
-            <Text className="font-sans text-base text-muted">{longDate(today)}</Text>
-            <Text className="font-medium text-base text-text mt-1">
-              {done} hechos · {pending} pendientes
-            </Text>
+          <View className="mb-2" style={{ gap: 12 }}>
+            <View className="flex-row items-start justify-between">
+              <View>
+                <Text className="font-bold text-3xl text-text">Habitat</Text>
+                <Text className="font-sans text-base text-muted">{longDate(today)}</Text>
+                <Text className="font-medium text-base text-text mt-1">
+                  {done} hechos · {pending} pendientes
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => router.push('/account')}
+                accessibilityRole="button"
+                accessibilityLabel="Cuenta"
+                className="items-center justify-center"
+                style={{ width: 44, height: 44 }}
+              >
+                <Ionicons name="person-circle-outline" size={28} color={t.muted} />
+              </Pressable>
+            </View>
+            {syncError && <Banner text={syncError} />}
           </View>
         }
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center px-8">
-            <Text className="font-sans text-base text-muted text-center">
-              Aún no tienes hábitos. Crea el primero con el botón de abajo.
-            </Text>
+          <View className="flex-1 items-center justify-center px-8" style={{ gap: 16 }}>
+            {status === 'loading' || status === 'idle' ? (
+              <ActivityIndicator color={t.muted} />
+            ) : status === 'error' ? (
+              <>
+                <Text className="font-sans text-base text-muted text-center">
+                  No se pudieron cargar tus hábitos.{'\n'}
+                  {loadError}
+                </Text>
+                <Pressable
+                  onPress={reload}
+                  accessibilityRole="button"
+                  className="items-center justify-center rounded-full bg-card px-6"
+                  style={{ minHeight: 44 }}
+                >
+                  <Text className="font-medium text-base text-text">Reintentar</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Text className="font-sans text-base text-muted text-center">
+                Aún no tienes hábitos. Crea el primero con el botón de abajo.
+              </Text>
+            )}
           </View>
         }
         renderItem={({ item }) => (
@@ -79,6 +116,18 @@ export default function HomeScreen() {
           </Pressable>
         </Link>
       </View>
+    </View>
+  );
+}
+
+function Banner({ text }: { text: string }) {
+  const t = useTokens();
+  return (
+    <View className="flex-row items-center rounded-2xl bg-card px-4 py-3" style={{ gap: 10 }}>
+      <Ionicons name="cloud-offline-outline" size={18} color={t.muted} />
+      <Text className="font-sans text-muted flex-1" style={{ fontSize: 13.5 }}>
+        {text}
+      </Text>
     </View>
   );
 }

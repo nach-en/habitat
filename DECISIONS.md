@@ -48,3 +48,14 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Editar** no cambia `created_on` ni borra registros; si cambia la frecuencia, rachas y cuadrícula se recalculan con la nueva.
 - **IDs** con `expo-crypto` `randomUUID()` (UUID v4, compatible con la columna `uuid` de Supabase).
 - **Cerrar la hoja** (`closeSheet`): si no hay historial (URL abierta directamente en web), vuelve a `/`.
+
+## Hito 5 · Supabase
+
+- **Migración** (`supabase/migrations/0001_init.sql`): igual que la spec, más `user_id default auth.uid()`, índices por `user_id`, políticas `to authenticated` y la comprobación de que un registro apunta a un hábito del propio usuario. La app envía `created_on` con la fecha local (el `current_date` del servidor es UTC).
+- **Sesión**: `@react-native-async-storage/async-storage` como almacenamiento (en web usa `localStorage`), en lugar de `expo-sqlite/localStorage` de la guía oficial, que en web necesita configuración extra.
+- **Autenticación con email y contraseña** (cambio respecto a la spec, que pedía sesión anónima): igual que en Viborapp. Pantalla `app/login.tsx` con "Entrar" / "Crear cuenta" (`signInWithPassword` / `signUp`); sin sesión, el layout redirige a `/login`. Con "Confirm email" activado en Supabase, el registro pide confirmar el correo antes de entrar. Así los datos son los mismos en la webapp y en el APK con solo iniciar sesión.
+- **Cuenta** (`app/account.tsx`): muestra el email y permite cerrar sesión (avisa si hay cambios sin sincronizar, que se perderían).
+- **Sincronización** (`src/lib/outbox.ts`): cada cambio se aplica al instante en local (`applyOp`, puro y con tests) y se encola. La cola se guarda en AsyncStorage, se envía en orden y, si falla la red, se reintenta con espera exponencial (1 s … 60 s). Los errores de la BD (con código) no se reintentan: se descarta la operación y se muestra el aviso. Todas las operaciones son idempotentes (upsert / delete).
+- **Carga inicial**: hábitos no archivados + registros paginados de 1000 en 1000; encima se aplican las operaciones aún pendientes, para no "deshacer" cambios offline.
+- **Cambio de usuario** (cerrar sesión y entrar con otra cuenta): se vacía la cola y se cargan los datos del nuevo usuario.
+- **Sin caché local de datos**: sin conexión al abrir la app se muestra el error con "Reintentar"; los cambios hechos con la app abierta sí sobreviven a cortes de red.

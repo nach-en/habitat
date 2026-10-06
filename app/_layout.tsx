@@ -1,7 +1,7 @@
 import '../global.css';
 
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -11,8 +11,20 @@ import {
   BricolageGrotesque_700Bold,
 } from '@expo-google-fonts/bricolage-grotesque';
 import { useTokens } from '@/theme/tokens';
+import { useHabits } from '@/store/habits';
 
 SplashScreen.preventAutoHideAsync();
+
+/** Sin sesión → /login; con sesión en /login → inicio. */
+function useAuthGate(ready: boolean, signedIn: boolean) {
+  const segments = useSegments();
+  useEffect(() => {
+    if (!ready) return;
+    const inLogin = segments[0] === 'login';
+    if (!signedIn && !inLogin) router.replace('/login');
+    if (signedIn && inLogin) router.replace('/');
+  }, [ready, signedIn, segments]);
+}
 
 export default function RootLayout() {
   const t = useTokens();
@@ -22,11 +34,20 @@ export default function RootLayout() {
     BricolageGrotesque_700Bold,
   });
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
-  }, [loaded, error]);
+  const account = useHabits((s) => s.account);
+  const ready = (loaded || !!error) && account !== undefined;
 
-  if (!loaded && !error) return null;
+  useEffect(() => {
+    void useHabits.getState().init();
+  }, []);
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+
+  useAuthGate(ready, !!account);
+
+  if (!ready) return null;
 
   return (
     <>
@@ -38,8 +59,10 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="login" options={{ animation: 'fade' }} />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

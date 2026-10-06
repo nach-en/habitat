@@ -1,20 +1,31 @@
 import { create } from 'zustand';
 import { randomUUID } from 'expo-crypto';
-import { subDays } from 'date-fns';
 import type { DayKey, Habit } from '@/types';
-import { toKey as key } from '@/lib/dates';
-import { isScheduled } from '@/lib/frequency';
-
-type HabitsData = {
-  habits: Habit[];
-  /** habitId → días hechos. */
-  logs: Record<string, Set<DayKey>>;
-};
+import { toKey } from '@/lib/dates';
+import { supabase } from '@/lib/supabase';
+import { applyOp, type HabitsData, type Op } from '@/lib/ops';
+import { habitFromRow, type HabitRow, type LogRow } from '@/lib/rows';
+import { clearOutbox, enqueue, flush, pendingOps, subscribeOutbox, type OutboxStatus } from '@/lib/outbox';
 
 /** Campos editables de un hábito (lo demás lo pone el store). */
 export type HabitInput = Omit<Habit, 'id' | 'createdOn'>;
 
+export type AccountInfo = { id: string; email: string | null };
+
 type HabitsState = HabitsData & {
+  /** Estado de la carga inicial. */
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  loadError: string | null;
+  /** Escrituras pendientes de enviar y último error de sincronización. */
+  sync: OutboxStatus;
+  /** `undefined` mientras se comprueba si hay sesión guardada. */
+  account: AccountInfo | null | undefined;
+
+  /** Arranca la escucha de sesión y sincronización. Idempotente. */
+  init: () => Promise<void>;
+  /** Vuelve a descargar los datos del usuario actual. */
+  reload: () => Promise<void>;
+
   /** Marca o desmarca `day` para el hábito. */
   toggleLog: (habitId: string, day: DayKey) => void;
   /** Crea un hábito con `created_on` = hoy y devuelve su id. */
@@ -23,91 +34,123 @@ type HabitsState = HabitsData & {
   deleteHabit: (id: string) => void;
 };
 
-// Datos de ejemplo en memoria (hito 1). Se sustituyen por Supabase en el hito 5.
-function sampleData(today: Date): HabitsData {
-  const habits: Habit[] = [
-    {
-      id: 'sample-water',
-      name: 'Beber agua',
-      description: '8 vasos a lo largo del día',
-      color: '#5aa9f2',
-      icon: 'water',
-      frequency: 'daily',
-      days: [],
-      timesPerWeek: 3,
-      reminderEnabled: false,
-      reminderTime: '08:00',
-      createdOn: key(subDays(today, 90)),
-    },
-    {
-      id: 'sample-run',
-      name: 'Correr',
-      description: 'Lunes, miércoles y viernes',
-      color: '#f2a03d',
-      icon: 'run',
-      frequency: 'days',
-      days: [0, 2, 4],
-      timesPerWeek: 3,
-      reminderEnabled: false,
-      reminderTime: '07:30',
-      createdOn: key(subDays(today, 60)),
-    },
-    {
-      id: 'sample-read',
-      name: 'Leer',
-      description: '20 páginas',
-      color: '#8b8cf5',
-      icon: 'book',
-      frequency: 'week',
-      days: [],
-      timesPerWeek: 4,
-      reminderEnabled: false,
-      reminderTime: '22:00',
-      createdOn: key(subDays(today, 30)),
-    },
-  ];
+const PAGE = 1000;
 
-  // Patrón pseudoaleatorio determinista (~75 % de días hechos) para que las
-  // cuadrículas tengan algo que mostrar.
-  let seed = 7;
-  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const logs: Record<string, Set<DayKey>> = {};
-  for (const h of habits) {
-    const set = new Set<DayKey>();
-    for (let i = 1; i <= 140; i++) {
-      const day = subDays(today, i);
-      if (h.frequency === 'days' && !isScheduled(h, day)) continue;
-      if (rand() < (h.frequency === 'week' ? 0.55 : 0.75)) set.add(key(day));
-    }
-    logs[h.id] = set;
+async function fetchAll(): Promise<HabitsData> {
+  const { data: rows, error } = await supabase
+    .from('habits')
+    .select('*')
+    .is('archived_at', null)
+    .order('created_at');
+  if (error) throw error;
+
+  const habits = (rows as HabitRow[]).map(habitFromRow);
+  const logs: Record<string, Set<DayKey>> = Object.fromEntries(habits.map((h) => [h.id, new Set<DayKey>()]));
+
+  // Supabase devuelve como mucho 1000 filas por consulta: se pagina.
+  for (let from = 0; ; from += PAGE) {
+    const { data, error: logsError } = await supabase
+      .from('habit_logs')
+      .select('habit_id, day')
+      .order('id')
+      .range(from, from + PAGE - 1);
+    if (logsError) throw logsError;
+    for (const { habit_id, day } of data as LogRow[]) logs[habit_id]?.add(day);
+    if (data.length < PAGE) break;
   }
 
   return { habits, logs };
 }
 
-export const useHabits = create<HabitsState>()((set) => ({
-  ...sampleData(new Date()),
+function accountFrom(user: { id: string; email?: string } | null): AccountInfo | null {
+  return user ? { id: user.id, email: user.email || null } : null;
+}
 
-  toggleLog: (habitId, day) =>
-    set((s) => {
-      const next = new Set(s.logs[habitId]);
-      if (next.has(day)) next.delete(day);
-      else next.add(day);
-      return { logs: { ...s.logs, [habitId]: next } };
-    }),
+function messageOf(e: unknown): string {
+  if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message);
+  return String(e);
+}
 
-  addHabit: (input) => {
-    const habit: Habit = { ...input, id: randomUUID(), createdOn: key(new Date()) };
-    set((s) => ({ habits: [...s.habits, habit], logs: { ...s.logs, [habit.id]: new Set() } }));
-    return habit.id;
-  },
+let initialized = false;
+let loadSeq = 0;
+/** Usuario cuyos datos hay cargados. */
+let dataUserId: string | null = null;
 
-  updateHabit: (id, input) =>
-    set((s) => ({ habits: s.habits.map((h) => (h.id === id ? { ...h, ...input } : h)) })),
+export const useHabits = create<HabitsState>()((set, get) => {
+  /** Aplica en local al instante y encola la escritura (actualización optimista). */
+  const commit = (op: Op) => {
+    set((s) => applyOp(s, op));
+    void enqueue(op);
+  };
 
-  deleteHabit: (id) =>
-    set((s) => {
-      const { [id]: _removed, ...logs } = s.logs;
-      return { habits: s.habits.filter((h) => h.id !== id), logs };
-    }),
-}));
+  return {
+    habits: [],
+    logs: {},
+    status: 'idle',
+    loadError: null,
+    sync: { pending: 0, error: null },
+    account: undefined,
+
+    init: async () => {
+      if (initialized) return;
+      initialized = true;
+
+      subscribeOutbox((sync) => set({ sync }));
+
+      // Se dispara al suscribirse (INITIAL_SESSION) y en cada entrada o salida.
+      supabase.auth.onAuthStateChange((_event, session) => {
+        const account = accountFrom(session?.user ?? null);
+        set({ account });
+        if (account?.id === dataUserId) return;
+
+        const switching = dataUserId !== null;
+        dataUserId = account?.id ?? null;
+        if (!account) {
+          loadSeq++;
+          set({ habits: [], logs: {}, status: 'idle', loadError: null });
+          void clearOutbox();
+          return;
+        }
+        // setTimeout: Supabase desaconseja llamarle dentro de este callback.
+        setTimeout(() => {
+          void (switching ? clearOutbox() : Promise.resolve()).then(() => get().reload());
+        }, 0);
+      });
+    },
+
+    reload: async () => {
+      if (!get().account) return;
+      const seq = ++loadSeq;
+      set({ status: 'loading', loadError: null });
+      try {
+        let data = await fetchAll();
+        // Cambios hechos en este dispositivo que aún no han llegado al servidor.
+        for (const op of await pendingOps()) data = applyOp(data, op);
+        if (seq !== loadSeq) return;
+        set({ ...data, status: 'ready' });
+        void flush();
+      } catch (e) {
+        if (seq !== loadSeq) return;
+        set({ status: 'error', loadError: messageOf(e) });
+      }
+    },
+
+    toggleLog: (habitId, day) => {
+      const done = !get().logs[habitId]?.has(day);
+      commit({ kind: 'setLog', habitId, day, done });
+    },
+
+    addHabit: (input) => {
+      const habit: Habit = { ...input, id: randomUUID(), createdOn: toKey(new Date()) };
+      commit({ kind: 'upsertHabit', habit });
+      return habit.id;
+    },
+
+    updateHabit: (id, input) => {
+      const current = get().habits.find((h) => h.id === id);
+      if (current) commit({ kind: 'upsertHabit', habit: { ...current, ...input } });
+    },
+
+    deleteHabit: (id) => commit({ kind: 'deleteHabit', id }),
+  };
+});
