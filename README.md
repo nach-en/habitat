@@ -19,6 +19,10 @@ npm test             # tests de la lógica pura
 npm run typecheck
 ```
 
+## Webapp en Vercel
+
+El repo está listo para importarlo en Vercel (`vercel.json`): compila con `npm run build:web` (copia `canvaskit.wasm` y ejecuta `expo export`) y publica `dist/`. En el proyecto de Vercel hay que definir `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY`, y añadir el dominio en Supabase → Authentication → URL Configuration.
+
 ## APK
 
 Con una cuenta de Expo:

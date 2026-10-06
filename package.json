@@ -48,7 +48,8 @@
     "ios": "expo run:ios",
     "web": "setup-skia-web && expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "build:web": "setup-skia-web && expo export --platform web"
   },
   "private": true,
   "jest": {
