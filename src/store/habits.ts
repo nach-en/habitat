@@ -5,6 +5,7 @@ import { toKey } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
 import { applyOp, type HabitsData, type Op } from '@/lib/ops';
 import { habitFromRow, type HabitRow, type LogRow } from '@/lib/rows';
+import { cancelAllReminders, syncReminders } from '@/lib/notifications';
 import { clearOutbox, enqueue, flush, pendingOps, subscribeOutbox, type OutboxStatus } from '@/lib/outbox';
 
 /** Campos editables de un hábito (lo demás lo pone el store). */
@@ -81,6 +82,7 @@ export const useHabits = create<HabitsState>()((set, get) => {
   const commit = (op: Op) => {
     set((s) => applyOp(s, op));
     void enqueue(op);
+    if (op.kind !== 'setLog') void syncReminders(get().habits);
   };
 
   return {
@@ -109,6 +111,7 @@ export const useHabits = create<HabitsState>()((set, get) => {
           loadSeq++;
           set({ habits: [], logs: {}, status: 'idle', loadError: null });
           void clearOutbox();
+          void cancelAllReminders();
           return;
         }
         // setTimeout: Supabase desaconseja llamarle dentro de este callback.
@@ -129,6 +132,8 @@ export const useHabits = create<HabitsState>()((set, get) => {
         if (seq !== loadSeq) return;
         set({ ...data, status: 'ready' });
         void flush();
+        // Reprograma según los datos del servidor (cambios hechos en otro dispositivo).
+        void syncReminders(data.habits);
       } catch (e) {
         if (seq !== loadSeq) return;
         set({ status: 'error', loadError: messageOf(e) });

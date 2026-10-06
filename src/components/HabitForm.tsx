@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, Te
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { iconKeys, iconName } from './icons';
+import { openSystemSettings, remindersSupported, requestPermission } from '@/lib/notifications';
 import { DESCRIPTION_MAX, NAME_MAX, shiftTime, validateHabit } from '@/lib/validation';
 import { fonts, habitColors, sizes, useTokens, withAlpha } from '@/theme/tokens';
 import type { HabitInput } from '@/store/habits';
@@ -42,6 +43,7 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState<HabitInput>(initial ?? DEFAULTS);
   const [submitted, setSubmitted] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const errors = validateHabit(form);
   const valid = Object.keys(errors).length === 0;
 
@@ -51,6 +53,18 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
     setSubmitted(true);
     if (!valid) return;
     onSubmit({ ...form, name: form.name.trim(), description: form.description.trim() });
+  };
+
+  // El permiso se pide la primera vez que se activa un recordatorio (§7).
+  const toggleReminder = async (on: boolean) => {
+    if (!on) return set('reminderEnabled', false);
+    set('reminderEnabled', true);
+    if ((await requestPermission()) === 'granted') {
+      setPermissionDenied(false);
+    } else {
+      set('reminderEnabled', false);
+      setPermissionDenied(true);
+    }
   };
 
   const toggleDay = (d: number) =>
@@ -252,8 +266,9 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
               <Text style={{ fontFamily: fonts.regular, fontSize: 16, color: t.text }}>Avisarme</Text>
               <Switch
                 value={form.reminderEnabled}
-                onValueChange={(v) => set('reminderEnabled', v)}
+                onValueChange={(v) => void toggleReminder(v)}
                 trackColor={{ false: withAlpha(t.muted, 0.35), true: form.color }}
+                thumbColor="#ffffff"
                 accessibilityLabel="Activar recordatorio"
               />
             </View>
@@ -280,6 +295,23 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
           </View>
         </Field>
 
+        {!remindersSupported && form.reminderEnabled && (
+          <Note text="Los recordatorios llegan en la app de Android. Aquí solo se guarda la hora." />
+        )}
+        {permissionDenied && (
+          <View style={{ gap: 8 }}>
+            <Note text="Habitat no tiene permiso para enviarte notificaciones. Actívalo en los ajustes del sistema para usar recordatorios." />
+            <Pressable
+              onPress={openSystemSettings}
+              accessibilityRole="button"
+              className="items-center justify-center rounded-2xl bg-card"
+              style={{ minHeight: sizes.minTouch }}
+            >
+              <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: t.text }}>Abrir ajustes</Text>
+            </Pressable>
+          </View>
+        )}
+
         {onDelete && (
           <Pressable
             onPress={onDelete}
@@ -302,6 +334,16 @@ function Field({ label, error, children }: { label: string; error?: string; chil
       <Text style={{ fontFamily: fonts.medium, fontSize: 13.5, color: t.muted }}>{label}</Text>
       {children}
       {error && <Text style={{ fontFamily: fonts.regular, fontSize: 13.5, color: '#e5484d' }}>{error}</Text>}
+    </View>
+  );
+}
+
+function Note({ text }: { text: string }) {
+  const t = useTokens();
+  return (
+    <View className="flex-row rounded-2xl bg-card px-4 py-3" style={{ gap: 10, marginTop: -10 }}>
+      <Ionicons name="information-circle-outline" size={18} color={t.muted} />
+      <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 13.5, color: t.muted, lineHeight: 19 }}>{text}</Text>
     </View>
   );
 }

@@ -59,3 +59,12 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Carga inicial**: hábitos no archivados + registros paginados de 1000 en 1000; encima se aplican las operaciones aún pendientes, para no "deshacer" cambios offline.
 - **Cambio de usuario** (cerrar sesión y entrar con otra cuenta): se vacía la cola y se cargan los datos del nuevo usuario.
 - **Sin caché local de datos**: sin conexión al abrir la app se muestra el error con "Reintentar"; los cambios hechos con la app abierta sí sobreviven a cortes de red.
+
+## Hito 6 · Recordatorios
+
+- **Web**: `expo-notifications` no programa notificaciones locales en web. Allí el recordatorio se guarda en el hábito y el formulario avisa de que "llegan en la app de Android" (`notifications.web.ts` no hace nada). Al instalar el APK empiezan a funcionar sin más.
+- **Lógica pura** (`src/lib/reminders.ts`, con tests): qué disparos programar (`days` → uno semanal por día elegido; `daily`/`week` → uno diario), el texto (título = nombre, cuerpo = descripción o "Es hora de tu hábito") y una huella para no reprogramar lo que no ha cambiado. Ojo: expo-notifications numera los días con 1 = domingo.
+- **Reconciliación** (`syncReminders`): en lugar de programar/cancelar en cada pantalla, el store llama a `syncReminders(habits)` al crear/editar/borrar y tras cada carga. Compara con lo guardado (habitId → ids + huella, en AsyncStorage), cancela lo que sobra y programa lo que falta. Así también se recogen los cambios hechos desde otro dispositivo. Las llamadas se encadenan para no pisarse.
+- **Permiso**: se pide al activar el interruptor por primera vez. Si se deniega, el interruptor vuelve a apagado y aparece un aviso con "Abrir ajustes" (`Linking.openSettings`). Si el permiso se retira después, los recordatorios simplemente no se programan.
+- **Android**: canal "Recordatorios" con importancia alta. Al cerrar sesión se cancelan todos.
+- **Verificado en Android 14 (emulador)**: permiso pedido al activar el interruptor, notificación recibida a la hora (Android la entregó con ~3 min de margen, por ser alarma inexacta), reprogramada para el día siguiente y cancelada al eliminar el hábito. El icono de la notificación es el genérico hasta el hito 7.
