@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { canShiftMonth, isInMonth, monthWeeks } from '@/lib/calendar';
-import { canToggle, cellState, cellStateLabel } from '@/lib/grid';
+import { canToggle, cellState, cellStateLabel, earliestEditable } from '@/lib/grid';
 import { fromKey, toKey } from '@/lib/dates';
 import { monthTitle } from '@/lib/format';
 import type { SubtypeLogs } from '@/lib/subtypes';
@@ -42,10 +42,10 @@ export function MonthCalendar({
 }: Props) {
   const t = useTokens();
   const todayDate = useMemo(() => fromKey(today), [today]);
-  const created = useMemo(() => fromKey(habit.createdOn), [habit.createdOn]);
+  const earliest = useMemo(() => earliestEditable(habit, todayDate), [habit, todayDate]);
   const weeks = useMemo(() => monthWeeks(month), [month]);
-  const canPrev = canShiftMonth(month, -1, created, todayDate);
-  const canNext = canShiftMonth(month, 1, created, todayDate);
+  const canPrev = canShiftMonth(month, -1, earliest, todayDate);
+  const canNext = canShiftMonth(month, 1, earliest, todayDate);
 
   return (
     <View

@@ -1,5 +1,6 @@
+import { subYears } from 'date-fns';
 import type { CellState, DayKey, Habit } from '@/types';
-import { addDays, daysBetween, fromKey, toKey, weekStart } from './dates';
+import { addDays, daysBetween, fromKey, startOfDay, toKey, weekStart } from './dates';
 import { isScheduled } from './frequency';
 
 /**
@@ -24,9 +25,27 @@ export function cellState(
   return 'idle';
 }
 
-/** Solo se pueden alternar días entre `created_on` y hoy, ambos incluidos. */
+/** Años hacia atrás que se pueden marcar antes de `created_on`. */
+export const BACKFILL_YEARS = 2;
+
+/** Primer día que se puede marcar: `created_on` o, si es posterior, hoy menos BACKFILL_YEARS. */
+export function earliestEditable(habit: Habit, today: Date): Date {
+  const created = fromKey(habit.createdOn);
+  const limit = subYears(startOfDay(today), BACKFILL_YEARS);
+  return daysBetween(created, limit) < 0 ? limit : created;
+}
+
+/** Se pueden alternar días hasta hoy, también anteriores a `created_on` (ver `withStartOn`). */
 export function canToggle(habit: Habit, day: Date, today: Date): boolean {
-  return daysBetween(fromKey(habit.createdOn), day) >= 0 && daysBetween(day, today) >= 0;
+  return daysBetween(earliestEditable(habit, today), day) >= 0 && daysBetween(day, today) >= 0;
+}
+
+/**
+ * Marcar un día anterior a `created_on` adelanta el inicio del hábito a ese
+ * día. Devuelve el hábito con el nuevo inicio, o null si no cambia.
+ */
+export function withStartOn(habit: Habit, day: DayKey): Habit | null {
+  return day < habit.createdOn ? { ...habit, createdOn: day } : null;
 }
 
 /**

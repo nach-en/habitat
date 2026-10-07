@@ -4,6 +4,7 @@ import type { DayKey, Habit } from '@/types';
 import { toKey } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
 import { applyOp, type HabitsData, type Op } from '@/lib/ops';
+import { withStartOn } from '@/lib/grid';
 import { habitFromRow, type HabitRow, type LogRow } from '@/lib/rows';
 import type { SubtypeLogs } from '@/lib/subtypes';
 import { cancelAllReminders, syncReminders } from '@/lib/notifications';
@@ -93,6 +94,13 @@ export const useHabits = create<HabitsState>()((set, get) => {
     if (op.kind === 'upsertHabit' || op.kind === 'deleteHabit') void syncReminders(get().habits);
   };
 
+  /** Antes de marcar un día anterior al inicio, adelanta `created_on` a ese día. */
+  const extendStart = (habitId: string, day: DayKey) => {
+    const current = get().habits.find((h) => h.id === habitId);
+    const habit = current && withStartOn(current, day);
+    if (habit) commit({ kind: 'upsertHabit', habit });
+  };
+
   return {
     habits: [],
     logs: {},
@@ -151,12 +159,14 @@ export const useHabits = create<HabitsState>()((set, get) => {
 
     toggleLog: (habitId, day) => {
       const done = !get().logs[habitId]?.has(day);
+      if (done) extendStart(habitId, day);
       commit({ kind: 'setLog', habitId, day, done });
     },
 
     toggleSubtype: (habitId, day, subtypeId) => {
       const marked = get().subtypeLogs[habitId]?.[day] ?? [];
       if (!marked.includes(subtypeId)) {
+        extendStart(habitId, day);
         commit({ kind: 'setSubtype', habitId, day, subtypeId, on: true });
       } else if (marked.length === 1) {
         // Era el último: el día deja de estar hecho (borra también un posible registro sin subtipo).

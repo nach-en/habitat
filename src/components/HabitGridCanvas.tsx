@@ -8,7 +8,16 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Canvas, Circle, Group, RoundedRect } from '@shopify/react-native-skia';
-import { canToggle, cellAt, cellState, cellStateLabel, gridColumns, gridLayout, stepFocusDay } from '@/lib/grid';
+import {
+  canToggle,
+  cellAt,
+  cellState,
+  cellStateLabel,
+  earliestEditable,
+  gridColumns,
+  gridLayout,
+  stepFocusDay,
+} from '@/lib/grid';
 import { fromKey, toKey } from '@/lib/dates';
 import { sizes, useTokens, withAlpha } from '@/theme/tokens';
 import type { CellState, DayKey, Habit } from '@/types';
@@ -65,10 +74,10 @@ export default function HabitGridCanvas({
   // Lector de pantalla: la cuadrícula es un control ajustable que recorre los días.
   const [focusKey, setFocusKey] = useState(today);
   const firstDay = useMemo(() => {
-    const created = fromKey(habit.createdOn);
+    const earliest = earliestEditable(habit, todayDate);
     const firstVisible = columns[0]![0]!;
-    return created > firstVisible ? created : firstVisible;
-  }, [habit.createdOn, columns]);
+    return earliest > firstVisible ? earliest : firstVisible;
+  }, [habit, todayDate, columns]);
   const focusDay = stepFocusDay(fromKey(focusKey), 0, firstDay, todayDate);
   const focusText = `${format(focusDay, "EEEE d 'de' MMMM", { locale: es })}: ${cellStateLabel(
     cellState(habit, focusDay, logs, todayDate, only),

@@ -19,10 +19,10 @@ export function monthWeeks(month: Date): Date[][] {
   return Array.from({ length: 6 }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(first, w * 7 + d)));
 }
 
-/** Meses navegables: del de `created_on` al de hoy. */
-export function canShiftMonth(month: Date, delta: number, created: Date, today: Date): boolean {
+/** Meses navegables: del de `earliest` (primer día que se puede marcar) al de hoy. */
+export function canShiftMonth(month: Date, delta: number, earliest: Date, today: Date): boolean {
   const next = shiftMonth(month, delta);
-  return differenceInCalendarMonths(next, created) >= 0 && differenceInCalendarMonths(today, next) >= 0;
+  return differenceInCalendarMonths(next, earliest) >= 0 && differenceInCalendarMonths(today, next) >= 0;
 }
 
 export function isInMonth(day: Date, month: Date): boolean {

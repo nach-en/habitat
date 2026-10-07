@@ -1,4 +1,14 @@
-import { canToggle, cellAt, cellState, cellStateLabel, gridColumns, gridLayout, stepFocusDay } from '@/lib/grid';
+import {
+  canToggle,
+  cellAt,
+  cellState,
+  cellStateLabel,
+  earliestEditable,
+  gridColumns,
+  gridLayout,
+  stepFocusDay,
+  withStartOn,
+} from '@/lib/grid';
 import { dow, toKey } from '@/lib/dates';
 import { d, habit, logs } from './helpers';
 
@@ -56,11 +66,27 @@ describe('cellState', () => {
 
 describe('canToggle', () => {
   const h = habit({ createdOn: '2026-10-01' });
-  it('solo entre created_on y hoy', () => {
-    expect(canToggle(h, d('2026-09-30'), today)).toBe(false);
-    expect(canToggle(h, d('2026-10-01'), today)).toBe(true);
+  it('hasta hoy, también antes de created_on (hasta 2 años atrás)', () => {
+    expect(canToggle(h, d('2026-09-30'), today)).toBe(true);
+    expect(canToggle(h, d('2024-10-07'), today)).toBe(true);
+    expect(canToggle(h, d('2024-10-06'), today)).toBe(false);
     expect(canToggle(h, today, today)).toBe(true);
     expect(canToggle(h, d('2026-10-08'), today)).toBe(false);
+  });
+
+  it('un hábito más antiguo que el límite se puede editar desde su inicio', () => {
+    const old = habit({ createdOn: '2020-01-01' });
+    expect(toKey(earliestEditable(old, today))).toBe('2020-01-01');
+    expect(toKey(earliestEditable(h, today))).toBe('2024-10-07');
+  });
+});
+
+describe('withStartOn', () => {
+  const h = habit({ createdOn: '2026-10-01' });
+  it('adelanta el inicio solo si el día es anterior', () => {
+    expect(withStartOn(h, '2026-09-15')?.createdOn).toBe('2026-09-15');
+    expect(withStartOn(h, '2026-10-01')).toBeNull();
+    expect(withStartOn(h, '2026-10-05')).toBeNull();
   });
 });
 

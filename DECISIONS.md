@@ -95,4 +95,10 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Inicio**: la cuadrícula ya no marca días (las celdas son pequeñas y es fácil equivocarse en el móvil). Tocarla abre el detalle en ese día (`?day=yyyy-MM-dd`). En inicio solo se marca hoy, con el check.
 - **Detalle**: cuadrícula de 26 semanas (tocarla lleva el calendario a ese día), rachas en píldoras y calendario mensual (`MonthCalendar`, 42 `View`s: la regla de un solo canvas es para la cuadrícula). Siempre 6 filas para que la altura no salte; se navega con ‹ › del mes de `created_on` al actual (`src/lib/calendar.ts`, con tests).
 - **Marcar en el calendario**: sin subtipos, tocar un día lo alterna. Con subtipos, tocar un día lo selecciona (borde) y debajo aparecen sus chips grandes (`SubtypeDayChips`, compartido con la hoja de inicio). Los puntos bajo cada día indican cuántos subtipos tiene (máx. 3).
-- Solo se pueden tocar días entre `created_on` y hoy, como en el resto de la app.
+
+## Hito 10 · Marcar días anteriores al inicio
+
+- **Elegido por el usuario**: en lugar de una fecha de inicio editable, marcar (o marcar un subtipo de) un día anterior a `created_on` adelanta `created_on` a ese día. El store encola primero el `upsertHabit` con el nuevo inicio y después el registro.
+- **Consecuencia aceptada**: los días programados entre el nuevo inicio y el antiguo sin marcar pasan a contar como fallo y pueden cortar la racha.
+- Desmarcar no mueve `created_on` hacia delante (no se sabe cuál era el inicio "real").
+- **Límite**: hasta 2 años antes de hoy (`BACKFILL_YEARS`), o desde `created_on` si es anterior. El calendario deja navegar hasta ese mes y la cuadrícula acepta esos días.

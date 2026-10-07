@@ -40,7 +40,7 @@ Importa desde `src/` con el alias `@/` (p. ej. `@/lib/streaks`).
 - Día programado: `daily` todos; `days` si `dow(d)` está en `days`; `week` cualquiera.
 - Estado de celda: `future` (> hoy), `before` (< `created_on`), `done`, `missed` (programado, pasado, sin registro; solo `daily`/`days`), `idle`. "Hoy" se dibuja como borde encima del estado.
 - Rachas: `daily`/`days` cuentan días programados consecutivos con registro; hoy sin marcar no rompe. `week` cuenta semanas consecutivas que alcanzan `times_per_week`; la semana en curso no rompe. La mejor racha se calcula hacia delante desde `created_on`.
-- Los días anteriores a `created_on` nunca cuentan como fallo. Solo se pueden alternar días entre `created_on` y hoy.
+- Los días anteriores a `created_on` nunca cuentan como fallo. Se pueden alternar días hasta hoy, también anteriores a `created_on` (hasta 2 años atrás): marcar uno adelanta `created_on` a ese día (`withStartOn`); desmarcarlo no lo devuelve.
 - La lógica pura (`dates`, `frequency`, `streaks`, `grid`) no importa nada de React ni de Expo y lleva tests.
 
 ## Comandos
