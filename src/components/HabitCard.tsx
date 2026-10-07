@@ -20,7 +20,6 @@ type Props = {
   subtypeLogs: SubtypeLogs;
   today: DayKey;
   onToggleDay: (habitId: string, day: DayKey) => void;
-  onToggleSubtype: (habitId: string, day: DayKey, subtypeId: string) => void;
 };
 
 export const HabitCard = memo(function HabitCard({
@@ -29,7 +28,6 @@ export const HabitCard = memo(function HabitCard({
   subtypeLogs,
   today,
   onToggleDay,
-  onToggleSubtype,
 }: Props) {
   const t = useTokens();
   const todayDate = useMemo(() => fromKey(today), [today]);
@@ -44,14 +42,10 @@ export const HabitCard = memo(function HabitCard({
   const only = useMemo(() => (filter ? daysWithSubtype(subtypeLogs, filter.id) : undefined), [filter, subtypeLogs]);
   const [pickerDay, setPickerDay] = useState<DayKey | null>(null);
 
-  const openEdit = () => router.push({ pathname: '/habit/[id]', params: { id: habit.id } });
-  const toggle = (day: DayKey) => onToggleDay(habit.id, day);
-  // Con subtipos se elige cuáles en una hoja; con filtro, la cuadrícula marca ese subtipo directamente.
-  const toggleGridDay = (day: DayKey) => {
-    if (filter) onToggleSubtype(habit.id, day, filter.id);
-    else if (subtypes.length > 0) setPickerDay(day);
-    else toggle(day);
-  };
+  const openDetail = (day?: DayKey) =>
+    router.push({ pathname: '/habit/[id]', params: day ? { id: habit.id, day } : { id: habit.id } });
+  // Aquí solo se marca hoy; los días pasados se editan en el calendario del detalle.
+  const toggleToday = () => (subtypes.length > 0 ? setPickerDay(today) : onToggleDay(habit.id, today));
 
   return (
     <View
@@ -66,9 +60,9 @@ export const HabitCard = memo(function HabitCard({
     >
       <View className="flex-row items-center gap-3">
         <Pressable
-          onPress={openEdit}
+          onPress={() => openDetail()}
           accessibilityRole="button"
-          accessibilityLabel={`Editar ${habit.name}`}
+          accessibilityLabel={`Ver ${habit.name}`}
           className="flex-1 flex-row items-center gap-3"
           style={{ minHeight: sizes.minTouch }}
         >
@@ -101,7 +95,7 @@ export const HabitCard = memo(function HabitCard({
           checked={logs.has(today)}
           color={habit.color}
           label={habit.name}
-          onToggle={() => (subtypes.length > 0 ? setPickerDay(today) : toggle(today))}
+          onToggle={toggleToday}
         />
       </View>
 
@@ -133,8 +127,9 @@ export const HabitCard = memo(function HabitCard({
         logs={logs}
         only={only}
         today={today}
-        onToggleDay={toggleGridDay}
+        onToggleDay={openDetail}
         label={filter ? `${habit.name}, ${filter.name}` : habit.name}
+        activateHint="abrir ese día en el calendario"
       />
 
       <View className="flex-row gap-4">

@@ -88,3 +88,11 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Marcar**: en un hábito con subtipos, el check y la cuadrícula abren una hoja (`SubtypePicker`, un `Modal` que funciona igual en web) con un chip por subtipo y "Sin subtipo" (solo si el día no tiene otros).
 - **Filtro**: chips "Todos / subtipos" encima de la cuadrícula (estado local de la tarjeta). Con un filtro, solo se pintan como hechos los días de ese subtipo; los hechos con otro quedan neutros, no como fallo. Tocar una celda con filtro marca o quita directamente ese subtipo.
 - **Pendiente**: pantalla de detalle del hábito con chips grandes e iconos por subtipo, estadísticas por subtipo y marcado de días pasados.
+
+## Hito 9 · Detalle del hábito y días pasados
+
+- **Rutas**: `/habit/[id]` es ahora el detalle (pantalla normal, no hoja) y el formulario pasa a `/habit/[id]/edit` (hoja). Se llega al detalle tocando el nombre en la tarjeta; al formulario, con el lápiz del detalle. Eliminar desde el formulario vuelve al inicio (`goHome`).
+- **Inicio**: la cuadrícula ya no marca días (las celdas son pequeñas y es fácil equivocarse en el móvil). Tocarla abre el detalle en ese día (`?day=yyyy-MM-dd`). En inicio solo se marca hoy, con el check.
+- **Detalle**: cuadrícula de 26 semanas (tocarla lleva el calendario a ese día), rachas en píldoras y calendario mensual (`MonthCalendar`, 42 `View`s: la regla de un solo canvas es para la cuadrícula). Siempre 6 filas para que la altura no salte; se navega con ‹ › del mes de `created_on` al actual (`src/lib/calendar.ts`, con tests).
+- **Marcar en el calendario**: sin subtipos, tocar un día lo alterna. Con subtipos, tocar un día lo selecciona (borde) y debajo aparecen sus chips grandes (`SubtypeDayChips`, compartido con la hoja de inicio). Los puntos bajo cada día indican cuántos subtipos tiene (máx. 3).
+- Solo se pueden tocar días entre `created_on` y hoy, como en el resto de la app.

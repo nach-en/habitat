@@ -61,7 +61,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="login" options={{ animation: 'fade' }} />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="habit/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="habit/[id]/index" />
+        <Stack.Screen name="habit/[id]/edit" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </>

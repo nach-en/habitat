@@ -23,6 +23,8 @@ export type HabitGridProps = {
   onToggleDay: (day: DayKey) => void;
   /** Nombre para el lector de pantalla (por defecto, el del hábito). */
   label?: string;
+  /** Qué hace tocar dos veces una celda, para el lector de pantalla. */
+  activateHint?: string;
 };
 
 type Cell = { x: number; y: number; state: CellState; isToday: boolean };
@@ -36,6 +38,7 @@ export default function HabitGridCanvas({
   weeks = sizes.gridWeeks,
   onToggleDay,
   label = habit.name,
+  activateHint = 'marcarlo o desmarcarlo',
 }: HabitGridProps) {
   const t = useTokens();
   const [width, setWidth] = useState(0);
@@ -110,7 +113,7 @@ export default function HabitGridCanvas({
       accessibilityRole="adjustable"
       accessibilityLabel={`Historial de ${label}`}
       accessibilityValue={{ text: focusText }}
-      accessibilityHint="Desliza arriba o abajo para cambiar de día. Toca dos veces para marcarlo o desmarcarlo."
+      accessibilityHint={`Desliza arriba o abajo para cambiar de día. Toca dos veces para ${activateHint}.`}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }, { name: 'activate' }]}
       onAccessibilityAction={onAccessibilityAction}
     >

@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { closeSheet } from '@/lib/navigation';
+import { closeSheet, goHome } from '@/lib/navigation';
 import { HabitForm } from '@/components/HabitForm';
 import { confirmDestructive } from '@/lib/confirm';
 import { useHabits } from '@/store/habits';
@@ -28,7 +28,8 @@ export default function EditHabitScreen() {
       'Eliminar',
     );
     if (!ok) return;
-    closeSheet();
+    // Vuelve al inicio: el detalle de un hábito borrado no tiene sentido.
+    goHome();
     deleteHabit(habit.id);
   };
 

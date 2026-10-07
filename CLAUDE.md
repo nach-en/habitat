@@ -18,9 +18,9 @@ Expo cambia mucho entre SDK: antes de usar una API de Expo/RN, consulta la docum
 ## Estructura
 
 ```
-app/                  rutas (expo-router): _layout, index, login, account, habit/new, habit/[id]
-src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, SubtypePicker, Chip, icons.ts
-src/lib/              dates, frequency, streaks, grid, ops, rows, subtypes, validation (puros) · supabase, auth, outbox, notifications
+app/                  rutas (expo-router): _layout, index, login, account, habit/new, habit/[id] (detalle), habit/[id]/edit
+src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, MonthCalendar, SubtypePicker, SubtypeDayChips, Chip, icons.ts
+src/lib/              dates, frequency, streaks, grid, calendar, format, ops, rows, subtypes, validation (puros) · supabase, auth, outbox, notifications
 src/store/habits.ts   Zustand + sincronización con Supabase
 src/theme/tokens.ts   tokens de color, medidas, fuentes
 src/types.ts          tipos compartidos

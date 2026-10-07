@@ -23,7 +23,6 @@ export default function HomeScreen() {
   const logs = useHabits((s) => s.logs);
   const subtypeLogs = useHabits((s) => s.subtypeLogs);
   const toggleLog = useHabits((s) => s.toggleLog);
-  const toggleSubtype = useHabits((s) => s.toggleSubtype);
   const status = useHabits((s) => s.status);
   const loadError = useHabits((s) => s.loadError);
   const syncError = useHabits((s) => s.sync.error);
@@ -113,7 +112,6 @@ export default function HomeScreen() {
             subtypeLogs={subtypeLogs[item.id] ?? NO_SUBTYPES}
             today={todayKey}
             onToggleDay={toggleLog}
-            onToggleSubtype={toggleSubtype}
           />
         )}
       />

@@ -9,12 +9,13 @@ type Props = {
   disabled?: boolean;
   /** `checkbox` para marcar varios; `radio` para elegir uno (filtro). */
   role?: 'checkbox' | 'radio';
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
 };
 
 export function Chip({ label, selected, color, onPress, disabled, role = 'checkbox', size = 'md' }: Props) {
   const t = useTokens();
   const sm = size === 'sm';
+  const lg = size === 'lg';
   return (
     <Pressable
       onPress={onPress}
@@ -25,15 +26,15 @@ export function Chip({ label, selected, color, onPress, disabled, role = 'checkb
       hitSlop={sm ? { top: 6, bottom: 6 } : undefined}
       className="items-center justify-center rounded-full"
       style={{
-        minHeight: sm ? 32 : 44,
-        paddingHorizontal: sm ? 12 : 16,
+        minHeight: sm ? 32 : lg ? 52 : 44,
+        paddingHorizontal: sm ? 12 : lg ? 20 : 16,
         backgroundColor: selected ? color : withAlpha(color, 0.12),
         borderWidth: 1,
         borderColor: selected ? color : withAlpha(color, 0.3),
         opacity: disabled ? 0.4 : 1,
       }}
     >
-      <Text style={{ fontFamily: fonts.medium, fontSize: sm ? 13 : 15, color: selected ? t.card : t.text }}>
+      <Text style={{ fontFamily: fonts.medium, fontSize: sm ? 13 : lg ? 16 : 15, color: selected ? t.card : t.text }}>
         {label}
       </Text>
     </Pressable>

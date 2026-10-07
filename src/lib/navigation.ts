@@ -5,3 +5,9 @@ export function closeSheet() {
   if (router.canGoBack()) router.back();
   else router.replace('/');
 }
+
+/** Vuelve al inicio cerrando todo lo que haya encima. */
+export function goHome() {
+  if (router.canDismiss()) router.dismissAll();
+  else router.replace('/');
+}
