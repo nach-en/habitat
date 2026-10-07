@@ -1,32 +1,57 @@
-import { memo, useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { memo, useMemo, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { CheckButton } from './CheckButton';
 import { HabitGrid } from './HabitGrid';
+import { Chip } from './Chip';
+import { SubtypePicker } from './SubtypePicker';
 import { iconName } from './icons';
 import { computeStreak } from '@/lib/streaks';
 import { weekCount } from '@/lib/frequency';
 import { fromKey } from '@/lib/dates';
+import { activeSubtypes, daysWithSubtype, type SubtypeLogs } from '@/lib/subtypes';
 import { blend, fonts, sizes, useTokens, withAlpha } from '@/theme/tokens';
 import type { DayKey, Habit } from '@/types';
 
 type Props = {
   habit: Habit;
   logs: Set<DayKey>;
+  subtypeLogs: SubtypeLogs;
   today: DayKey;
   onToggleDay: (habitId: string, day: DayKey) => void;
+  onToggleSubtype: (habitId: string, day: DayKey, subtypeId: string) => void;
 };
 
-export const HabitCard = memo(function HabitCard({ habit, logs, today, onToggleDay }: Props) {
+export const HabitCard = memo(function HabitCard({
+  habit,
+  logs,
+  subtypeLogs,
+  today,
+  onToggleDay,
+  onToggleSubtype,
+}: Props) {
   const t = useTokens();
   const todayDate = useMemo(() => fromKey(today), [today]);
   const streak = useMemo(() => computeStreak(habit, logs, todayDate), [habit, logs, todayDate]);
   const thisWeek = habit.frequency === 'week' ? weekCount(habit, logs, todayDate) : 0;
   const unit = streak.unit;
 
+  const subtypes = useMemo(() => activeSubtypes(habit.subtypes), [habit.subtypes]);
+  // Filtro de la cuadrícula por subtipo (solo afecta a lo que se ve).
+  const [filterId, setFilterId] = useState<string | null>(null);
+  const filter = subtypes.find((s) => s.id === filterId) ?? null;
+  const only = useMemo(() => (filter ? daysWithSubtype(subtypeLogs, filter.id) : undefined), [filter, subtypeLogs]);
+  const [pickerDay, setPickerDay] = useState<DayKey | null>(null);
+
   const openEdit = () => router.push({ pathname: '/habit/[id]', params: { id: habit.id } });
   const toggle = (day: DayKey) => onToggleDay(habit.id, day);
+  // Con subtipos se elige cuáles en una hoja; con filtro, la cuadrícula marca ese subtipo directamente.
+  const toggleGridDay = (day: DayKey) => {
+    if (filter) onToggleSubtype(habit.id, day, filter.id);
+    else if (subtypes.length > 0) setPickerDay(day);
+    else toggle(day);
+  };
 
   return (
     <View
@@ -76,11 +101,41 @@ export const HabitCard = memo(function HabitCard({ habit, logs, today, onToggleD
           checked={logs.has(today)}
           color={habit.color}
           label={habit.name}
-          onToggle={() => toggle(today)}
+          onToggle={() => (subtypes.length > 0 ? setPickerDay(today) : toggle(today))}
         />
       </View>
 
-      <HabitGrid habit={habit} logs={logs} today={today} onToggleDay={toggle} />
+      {subtypes.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 6 }}
+          style={{ marginVertical: -4 }}
+          accessibilityLabel="Filtrar historial por subtipo"
+        >
+          <Chip label="Todos" size="sm" role="radio" color={habit.color} selected={!filter} onPress={() => setFilterId(null)} />
+          {subtypes.map((s) => (
+            <Chip
+              key={s.id}
+              label={s.name}
+              size="sm"
+              role="radio"
+              color={habit.color}
+              selected={filter?.id === s.id}
+              onPress={() => setFilterId(filter?.id === s.id ? null : s.id)}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      <HabitGrid
+        habit={habit}
+        logs={logs}
+        only={only}
+        today={today}
+        onToggleDay={toggleGridDay}
+        label={filter ? `${habit.name}, ${filter.name}` : habit.name}
+      />
 
       <View className="flex-row gap-4">
         <Stat label="Racha" value={`${streak.current} ${unit}`} />
@@ -89,6 +144,10 @@ export const HabitCard = memo(function HabitCard({ habit, logs, today, onToggleD
           <Stat label="esta semana" value={`${thisWeek}/${habit.timesPerWeek}`} valueFirst />
         )}
       </View>
+
+      {subtypes.length > 0 && (
+        <SubtypePicker habit={habit} day={pickerDay} today={today} onClose={() => setPickerDay(null)} />
+      )}
     </View>
   );
 });

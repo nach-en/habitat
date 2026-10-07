@@ -2,11 +2,23 @@ import type { CellState, DayKey, Habit } from '@/types';
 import { addDays, daysBetween, fromKey, toKey, weekStart } from './dates';
 import { isScheduled } from './frequency';
 
-/** Estado visual de la celda de `day` (ver HABITAT.md §6). "Hoy" se pinta aparte. */
-export function cellState(habit: Habit, day: Date, logs: Set<DayKey>, today: Date): CellState {
+/**
+ * Estado visual de la celda de `day` (ver HABITAT.md §6). "Hoy" se pinta aparte.
+ *
+ * Con `only` (filtro por subtipo) solo cuentan como hechos esos días; los
+ * hechos con otro subtipo quedan como `idle`, no como fallo.
+ */
+export function cellState(
+  habit: Habit,
+  day: Date,
+  logs: Set<DayKey>,
+  today: Date,
+  only?: Set<DayKey>,
+): CellState {
   if (daysBetween(day, today) < 0) return 'future';
   if (daysBetween(fromKey(habit.createdOn), day) < 0) return 'before';
-  if (logs.has(toKey(day))) return 'done';
+  const key = toKey(day);
+  if (logs.has(key)) return !only || only.has(key) ? 'done' : 'idle';
   const past = daysBetween(day, today) > 0;
   if (past && habit.frequency !== 'week' && isScheduled(habit, day)) return 'missed';
   return 'idle';

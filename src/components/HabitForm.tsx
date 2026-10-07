@@ -2,7 +2,9 @@ import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { randomUUID } from 'expo-crypto';
 import { iconKeys, iconName } from './icons';
+import { SUBTYPE_NAME_MAX, activeSubtypes, addSubtype, archiveSubtype } from '@/lib/subtypes';
 import { openSystemSettings, remindersSupported, requestPermission } from '@/lib/notifications';
 import { DESCRIPTION_MAX, NAME_MAX, shiftTime, validateHabit } from '@/lib/validation';
 import { fonts, habitColors, sizes, useTokens, withAlpha } from '@/theme/tokens';
@@ -27,6 +29,7 @@ const DEFAULTS: HabitInput = {
   timesPerWeek: 3,
   reminderEnabled: false,
   reminderTime: '08:00',
+  subtypes: [],
 };
 
 const FREQUENCIES: { value: Frequency; label: string }[] = [
@@ -65,6 +68,16 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
       set('reminderEnabled', false);
       setPermissionDenied(true);
     }
+  };
+
+  const [subtypeName, setSubtypeName] = useState('');
+  const [subtypeError, setSubtypeError] = useState<string | null>(null);
+  const addSubtypeFromInput = () => {
+    const r = addSubtype(form.subtypes, subtypeName, randomUUID());
+    if ('error' in r) return setSubtypeError(r.error);
+    set('subtypes', r.list);
+    setSubtypeName('');
+    setSubtypeError(null);
   };
 
   const toggleDay = (d: number) =>
@@ -258,6 +271,57 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
               />
             </View>
           )}
+        </Field>
+
+        <Field label="Subtipos" error={subtypeError ?? undefined}>
+          {activeSubtypes(form.subtypes).length > 0 && (
+            <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+              {activeSubtypes(form.subtypes).map((s) => (
+                <View
+                  key={s.id}
+                  className="flex-row items-center rounded-full"
+                  style={{ backgroundColor: withAlpha(form.color, 0.14), paddingLeft: 14 }}
+                >
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: t.text }}>{s.name}</Text>
+                  <Pressable
+                    onPress={() => set('subtypes', archiveSubtype(form.subtypes, s.id))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Quitar ${s.name}`}
+                    className="items-center justify-center"
+                    style={{ width: 40, height: 40 }}
+                  >
+                    <Ionicons name="close" size={18} color={t.muted} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+          <View className="flex-row" style={{ gap: 8 }}>
+            <TextInput
+              value={subtypeName}
+              onChangeText={(v) => {
+                setSubtypeName(v);
+                setSubtypeError(null);
+              }}
+              onSubmitEditing={addSubtypeFromInput}
+              submitBehavior="submit"
+              placeholder="Opcional. Ej. Gym, Pádel…"
+              placeholderTextColor={t.muted}
+              maxLength={SUBTYPE_NAME_MAX}
+              returnKeyType="done"
+              style={[inputStyle, { flex: 1 }]}
+              accessibilityLabel="Nuevo subtipo"
+            />
+            <Pressable
+              onPress={addSubtypeFromInput}
+              accessibilityRole="button"
+              accessibilityLabel="Añadir subtipo"
+              className="items-center justify-center rounded-2xl bg-card"
+              style={{ width: sizes.minTouch + 4, minHeight: sizes.minTouch }}
+            >
+              <Ionicons name="add" size={22} color={form.color} />
+            </Pressable>
+          </View>
         </Field>
 
         <Field label="Recordatorio">

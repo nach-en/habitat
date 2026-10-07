@@ -66,14 +66,33 @@ async function send(op: Op): Promise<{ message: string; code?: string } | null> 
       return error;
     }
     case 'setLog': {
+      // Desmarcar borra todos los registros del día, con o sin subtipo.
       const { error } = op.done
-        ? await supabase
-            .from('habit_logs')
-            .upsert({ habit_id: op.habitId, day: op.day }, { onConflict: 'habit_id,day', ignoreDuplicates: true })
+        ? await insertLog(op.habitId, op.day, null)
         : await supabase.from('habit_logs').delete().eq('habit_id', op.habitId).eq('day', op.day);
       return error;
     }
+    case 'setSubtype': {
+      const { error } = op.on
+        ? await insertLog(op.habitId, op.day, op.subtypeId)
+        : await supabase
+            .from('habit_logs')
+            .delete()
+            .eq('habit_id', op.habitId)
+            .eq('day', op.day)
+            .eq('subtype_id', op.subtypeId);
+      return error;
+    }
   }
+}
+
+function insertLog(habitId: string, day: string, subtypeId: string | null) {
+  return supabase
+    .from('habit_logs')
+    .upsert(
+      { habit_id: habitId, day, subtype_id: subtypeId },
+      { onConflict: 'habit_id,day,subtype_id', ignoreDuplicates: true },
+    );
 }
 
 /** Errores de la BD (con código) no se arreglan reintentando; los de red sí. */

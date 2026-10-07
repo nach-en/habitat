@@ -1,4 +1,4 @@
-import type { Frequency, Habit } from '@/types';
+import type { Frequency, Habit, Subtype } from '@/types';
 
 /** Fila de `public.habits` tal como la devuelve Supabase. */
 export type HabitRow = {
@@ -15,11 +15,12 @@ export type HabitRow = {
   /** 'HH:mm:ss' */
   reminder_time: string;
   created_on: string;
+  subtypes: Subtype[];
   archived_at?: string | null;
   created_at?: string;
 };
 
-export type LogRow = { habit_id: string; day: string };
+export type LogRow = { habit_id: string; day: string; subtype_id: string | null };
 
 export function habitFromRow(r: HabitRow): Habit {
   return {
@@ -34,6 +35,7 @@ export function habitFromRow(r: HabitRow): Habit {
     reminderEnabled: r.reminder_enabled,
     reminderTime: r.reminder_time.slice(0, 5),
     createdOn: r.created_on,
+    subtypes: r.subtypes ?? [],
   };
 }
 
@@ -51,5 +53,6 @@ export function habitToRow(h: Habit): Omit<HabitRow, 'user_id' | 'archived_at' |
     reminder_enabled: h.reminderEnabled,
     reminder_time: `${h.reminderTime}:00`,
     created_on: h.createdOn,
+    subtypes: h.subtypes,
   };
 }

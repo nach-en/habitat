@@ -19,8 +19,8 @@ Expo cambia mucho entre SDK: antes de usar una API de Expo/RN, consulta la docum
 
 ```
 app/                  rutas (expo-router): _layout, index, login, account, habit/new, habit/[id]
-src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, icons.ts
-src/lib/              dates, frequency, streaks, grid, ops, rows, validation (puros) · supabase, auth, outbox, notifications
+src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, SubtypePicker, Chip, icons.ts
+src/lib/              dates, frequency, streaks, grid, ops, rows, subtypes, validation (puros) · supabase, auth, outbox, notifications
 src/store/habits.ts   Zustand + sincronización con Supabase
 src/theme/tokens.ts   tokens de color, medidas, fuentes
 src/types.ts          tipos compartidos
@@ -34,7 +34,7 @@ Importa desde `src/` con el alias `@/` (p. ej. `@/lib/streaks`).
 
 - La semana empieza en **lunes**; `dow(d)` devuelve 0 = lunes … 6 = domingo.
 - Los días se representan como `DayKey` = `'yyyy-MM-dd'` en hora local, sin zona horaria. Convierte con `toKey` / `fromKey` de `@/lib/dates`.
-- Un registro en `habit_logs` = "hecho ese día". Desmarcar = borrar la fila.
+- Un registro en `habit_logs` = "hecho ese día", opcionalmente con `subtype_id` (puede haber varios por día; `null` = sin subtipo). Desmarcar el día = borrar todas sus filas.
 - Escrituras siempre optimistas: `commit(op)` en el store aplica `applyOp` en local y encola la operación en `outbox` (persistente, con reintento).
 - Plataforma principal: Android (webapp primero, APK después). Todo debe funcionar también en web.
 - Día programado: `daily` todos; `days` si `dow(d)` está en `days`; `week` cualquiera.

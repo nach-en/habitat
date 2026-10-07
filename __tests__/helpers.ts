@@ -15,6 +15,7 @@ export function habit(overrides: Partial<Habit> = {}): Habit {
     reminderEnabled: false,
     reminderTime: '08:00',
     createdOn: '2026-09-01',
+    subtypes: [],
     ...overrides,
   };
 }

@@ -10,16 +10,20 @@ import { todayCounts } from '@/lib/frequency';
 import { fromKey } from '@/lib/dates';
 import { useToday } from '@/hooks/useToday';
 import { useTokens } from '@/theme/tokens';
+import type { SubtypeLogs } from '@/lib/subtypes';
 import type { DayKey } from '@/types';
 
 const EMPTY = new Set<DayKey>();
+const NO_SUBTYPES: SubtypeLogs = {};
 
 export default function HomeScreen() {
   const t = useTokens();
   const insets = useSafeAreaInsets();
   const habits = useHabits((s) => s.habits);
   const logs = useHabits((s) => s.logs);
+  const subtypeLogs = useHabits((s) => s.subtypeLogs);
   const toggleLog = useHabits((s) => s.toggleLog);
+  const toggleSubtype = useHabits((s) => s.toggleSubtype);
   const status = useHabits((s) => s.status);
   const loadError = useHabits((s) => s.loadError);
   const syncError = useHabits((s) => s.sync.error);
@@ -106,8 +110,10 @@ export default function HomeScreen() {
           <HabitCard
             habit={item}
             logs={logs[item.id] ?? EMPTY}
+            subtypeLogs={subtypeLogs[item.id] ?? NO_SUBTYPES}
             today={todayKey}
             onToggleDay={toggleLog}
+            onToggleSubtype={toggleSubtype}
           />
         )}
       />

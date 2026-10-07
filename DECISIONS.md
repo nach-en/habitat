@@ -78,3 +78,13 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Accesibilidad de la cuadrícula**: como es un único canvas, se expone como control *ajustable*: el lector de pantalla anuncia "Historial de X, lunes 5 de octubre: hecho"; deslizar arriba/abajo cambia de día (sin salir de `created_on`…hoy) y tocar dos veces marca o desmarca. El check ya anunciaba su estado.
 - **Errores de red**: además del aviso de sincronización y del error de carga inicial, si falla una recarga con hábitos ya en pantalla aparece un aviso. Deslizar hacia abajo recarga.
 - **EAS**: `eas.json` con perfil `preview` que genera un APK (`buildType: apk`).
+
+## Hito 8 · Subtipos
+
+- **Qué son**: etiquetas opcionales dentro de un hábito (p. ej. "Gym", "Pádel" en "Ejercicio"). Un día puede tener varios. Las rachas, la cuadrícula y las estadísticas siguen siendo del hábito: un día está hecho si tiene al menos un registro, con o sin subtipo. En `week`, dos subtipos el mismo día cuentan como un día.
+- **Almacenamiento** (`0002_subtypes.sql`): los subtipos van en `habits.subtypes` (`jsonb`, lista ordenada `{id, name, archived?}`) en lugar de una tabla aparte. Así viajan con el `upsertHabit` de siempre y añadir campos (p. ej. iconos) no necesita migración. `habit_logs` gana `subtype_id` (sin FK) y la restricción única pasa a `(habit_id, day, subtype_id)` con `nulls not distinct`; `null` = "hecho sin subtipo".
+- **Borrar un subtipo** lo archiva: deja de ofrecerse, pero su historial se conserva. Añadir otro con el mismo nombre (sin distinguir mayúsculas) lo recupera. Máximo 12 activos y 20 caracteres.
+- **Operaciones**: `setLog` no cambia (desmarcar borra todos los registros del día, con subtipos incluidos) y se añade `setSubtype`. Quitar el último subtipo de un día desmarca el día entero (`setLog false`), para no dejar un "hecho sin subtipo" que no se ve. Las operaciones antiguas del outbox siguen valiendo.
+- **Marcar**: en un hábito con subtipos, el check y la cuadrícula abren una hoja (`SubtypePicker`, un `Modal` que funciona igual en web) con un chip por subtipo y "Sin subtipo" (solo si el día no tiene otros).
+- **Filtro**: chips "Todos / subtipos" encima de la cuadrícula (estado local de la tarjeta). Con un filtro, solo se pintan como hechos los días de ese subtipo; los hechos con otro quedan neutros, no como fallo. Tocar una celda con filtro marca o quita directamente ese subtipo.
+- **Pendiente**: pantalla de detalle del hábito con chips grandes e iconos por subtipo, estadísticas por subtipo y marcado de días pasados.

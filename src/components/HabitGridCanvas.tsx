@@ -16,9 +16,13 @@ import type { CellState, DayKey, Habit } from '@/types';
 export type HabitGridProps = {
   habit: Habit;
   logs: Set<DayKey>;
+  /** Filtro por subtipo: solo estos días se pintan como hechos. */
+  only?: Set<DayKey> | undefined;
   today: DayKey;
   weeks?: number;
   onToggleDay: (day: DayKey) => void;
+  /** Nombre para el lector de pantalla (por defecto, el del hábito). */
+  label?: string;
 };
 
 type Cell = { x: number; y: number; state: CellState; isToday: boolean };
@@ -27,9 +31,11 @@ type Cell = { x: number; y: number; state: CellState; isToday: boolean };
 export default function HabitGridCanvas({
   habit,
   logs,
+  only,
   today,
   weeks = sizes.gridWeeks,
   onToggleDay,
+  label = habit.name,
 }: HabitGridProps) {
   const t = useTokens();
   const [width, setWidth] = useState(0);
@@ -45,13 +51,13 @@ export default function HabitGridCanvas({
         out.push({
           x: c * step,
           y: r * step,
-          state: cellState(habit, day, logs, todayDate),
+          state: cellState(habit, day, logs, todayDate, only),
           isToday: toKey(day) === today,
         });
       }),
     );
     return out;
-  }, [columns, layout, habit, logs, todayDate, today]);
+  }, [columns, layout, habit, logs, only, todayDate, today]);
 
   // Lector de pantalla: la cuadrícula es un control ajustable que recorre los días.
   const [focusKey, setFocusKey] = useState(today);
@@ -62,7 +68,7 @@ export default function HabitGridCanvas({
   }, [habit.createdOn, columns]);
   const focusDay = stepFocusDay(fromKey(focusKey), 0, firstDay, todayDate);
   const focusText = `${format(focusDay, "EEEE d 'de' MMMM", { locale: es })}: ${cellStateLabel(
-    cellState(habit, focusDay, logs, todayDate),
+    cellState(habit, focusDay, logs, todayDate, only),
   )}`;
 
   const onAccessibilityAction = (e: AccessibilityActionEvent) => {
@@ -102,7 +108,7 @@ export default function HabitGridCanvas({
       onPress={onPress}
       style={{ height: layout.height || undefined }}
       accessibilityRole="adjustable"
-      accessibilityLabel={`Historial de ${habit.name}`}
+      accessibilityLabel={`Historial de ${label}`}
       accessibilityValue={{ text: focusText }}
       accessibilityHint="Desliza arriba o abajo para cambiar de día. Toca dos veces para marcarlo o desmarcarlo."
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }, { name: 'activate' }]}

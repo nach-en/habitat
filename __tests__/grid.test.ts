@@ -21,6 +21,14 @@ describe('cellState', () => {
     expect(cellState(daily, today, logs('2026-10-07'), today)).toBe('done');
   });
 
+  it('con filtro: hecho con otro subtipo → idle; sin registro sigue siendo fallo', () => {
+    const all = logs('2026-10-02', '2026-10-03');
+    const only = logs('2026-10-03');
+    expect(cellState(daily, d('2026-10-03'), all, today, only)).toBe('done');
+    expect(cellState(daily, d('2026-10-02'), all, today, only)).toBe('idle');
+    expect(cellState(daily, d('2026-10-04'), all, today, only)).toBe('missed');
+  });
+
   it('missed: programado, pasado y sin registro', () => {
     expect(cellState(daily, d('2026-10-02'), logs(), today)).toBe('missed');
   });

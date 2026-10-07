@@ -3,6 +3,14 @@ export type Frequency = 'daily' | 'days' | 'week';
 /** Clave de día local en formato 'yyyy-MM-dd' (sin zona horaria). */
 export type DayKey = string;
 
+/** Subtipo de un hábito (p. ej. "Pádel" dentro de "Ejercicio"). */
+export type Subtype = {
+  id: string;
+  name: string;
+  /** Archivado: no se ofrece al marcar, pero sus registros se conservan. */
+  archived?: boolean;
+};
+
 export type Habit = {
   id: string;
   name: string;
@@ -19,6 +27,8 @@ export type Habit = {
   /** 'HH:mm'. */
   reminderTime: string;
   createdOn: DayKey;
+  /** En orden de presentación; incluye los archivados. */
+  subtypes: Subtype[];
 };
 
 export type CellState = 'future' | 'before' | 'done' | 'missed' | 'idle';
