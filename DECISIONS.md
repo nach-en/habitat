@@ -44,7 +44,7 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Hoja**: `presentation: 'modal'` con `animation: 'slide_from_bottom'` (en Android sube desde abajo; en web es una página). Barra propia con "Cancelar · título · Guardar".
 - **Hora del recordatorio**: dos selectores −/+ (hora de 1 en 1, minutos de 5 en 5) en lugar de un selector nativo de hora, que no existe en web.
 - **Validación** (`src/lib/validation.ts`, con tests): nombre obligatorio (máx. 40), descripción opcional (máx. 80), `days` necesita al menos un día, `week` entre 1 y 7 veces. Los errores se muestran al intentar guardar.
-- **Confirmación de borrado**: `Alert.alert` en nativo y `window.confirm` en web (`src/lib/confirm.ts` / `.web.ts`), porque en web `Alert` no muestra botones.
+- **Confirmación de borrado**: `Alert.alert` en nativo; en web, diálogo propio (`ConfirmDialog`, montado en el layout, con la cola de `src/lib/confirmQueue.ts`), porque en web `Alert` no muestra botones y `window.confirm` no aparece en algunos navegadores o vistas web (se daba por cancelado y "Eliminar hábito" parecía no hacer nada).
 - **Editar** no cambia `created_on` ni borra registros; si cambia la frecuencia, rachas y cuadrícula se recalculan con la nueva.
 - **IDs** con `expo-crypto` `randomUUID()` (UUID v4, compatible con la columna `uuid` de Supabase).
 - **Cerrar la hoja** (`closeSheet`): si no hay historial (URL abierta directamente en web), vuelve a `/`.

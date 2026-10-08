@@ -12,6 +12,7 @@ import {
 } from '@expo-google-fonts/bricolage-grotesque';
 import { useTokens } from '@/theme/tokens';
 import { useHabits } from '@/store/habits';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -65,6 +66,7 @@ export default function RootLayout() {
         <Stack.Screen name="habit/[id]/edit" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
+      <ConfirmDialog />
     </>
   );
 }
