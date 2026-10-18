@@ -81,14 +81,22 @@ export const HabitCard = memo(function HabitCard({
             <Text numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 17, color: t.text }}>
               {habit.name}
             </Text>
-            {habit.description !== '' && (
-              <Text
-                numberOfLines={1}
-                style={{ fontFamily: fonts.regular, fontSize: 13.5, color: t.muted }}
-              >
-                {habit.description}
-              </Text>
-            )}
+            {/* Racha en lugar de la descripción (que se ve en el detalle): la tarjeta queda más baja. */}
+            <Text numberOfLines={1} style={{ fontFamily: fonts.regular, fontSize: 13.5, color: t.muted }}>
+              Racha <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${streak.current} ${unit}`}</Text>
+              {habit.frequency === 'week' ? (
+                <>
+                  {' · '}
+                  <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${thisWeek}/${habit.timesPerWeek}`}</Text>
+                  {' esta semana'}
+                </>
+              ) : (
+                <>
+                  {' · Mejor '}
+                  <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${streak.best} ${unit}`}</Text>
+                </>
+              )}
+            </Text>
           </View>
         </Pressable>
         <CheckButton
@@ -133,35 +141,9 @@ export const HabitCard = memo(function HabitCard({
         activateHint="abrir ese día en el calendario"
       />
 
-      <View className="flex-row gap-4">
-        <Stat label="Racha" value={`${streak.current} ${unit}`} />
-        <Stat label="Mejor" value={`${streak.best} ${unit}`} />
-        {habit.frequency === 'week' && (
-          <Stat label="esta semana" value={`${thisWeek}/${habit.timesPerWeek}`} valueFirst />
-        )}
-      </View>
-
       {subtypes.length > 0 && (
         <SubtypePicker habit={habit} day={pickerDay} today={today} onClose={() => setPickerDay(null)} />
       )}
     </View>
   );
 });
-
-function Stat({ label, value, valueFirst }: { label: string; value: string; valueFirst?: boolean }) {
-  const t = useTokens();
-  const v = <Text style={{ fontFamily: fonts.medium, color: t.text }}>{value}</Text>;
-  return (
-    <Text style={{ fontFamily: fonts.regular, fontSize: 13.5, color: t.muted }}>
-      {valueFirst ? (
-        <>
-          {v} {label}
-        </>
-      ) : (
-        <>
-          {label} {v}
-        </>
-      )}
-    </Text>
-  );
-}

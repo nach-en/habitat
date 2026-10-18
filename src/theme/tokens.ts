@@ -52,9 +52,9 @@ export const sizes = {
   iconTileRadius: 14,
   check: 48,
   checkRadius: 15,
-  cellGap: 3,
+  cellGap: 4,
   cellRadius: 3.5,
-  gridWeeks: 30,
+  gridWeeks: 28,
   minTouch: 44,
 } as const;
 

@@ -36,7 +36,10 @@ export type HabitGridProps = {
   activateHint?: string;
 };
 
-type Cell = { x: number; y: number; state: CellState; isToday: boolean };
+type Cell = { x: number; y: number; state: CellState; isToday: boolean; opacity: number };
+
+/** Las columnas más antiguas se desvanecen hacia la izquierda. */
+const FADE = [0.3, 0.65];
 
 /** Cuadrícula de historial: un único canvas Skia, una columna por semana, lunes arriba. */
 export default function HabitGridCanvas({
@@ -65,6 +68,7 @@ export default function HabitGridCanvas({
           y: r * step,
           state: cellState(habit, day, logs, todayDate, only),
           isToday: toKey(day) === today,
+          opacity: FADE[c] ?? 1,
         });
       }),
     );
@@ -132,10 +136,10 @@ export default function HabitGridCanvas({
     >
       {width > 0 && (
         <Canvas style={{ width, height: layout.height }}>
-          {cells.map(({ x, y, state, isToday }, i) => {
+          {cells.map(({ x, y, state, isToday, opacity }, i) => {
             if (state === 'future') return null;
             return (
-              <Group key={i}>
+              <Group key={i} opacity={opacity}>
                 {state === 'before' ? (
                   <Circle cx={x + s / 2} cy={y + s / 2} r={Math.max(1, s * 0.08)} color={t.cellFaint} />
                 ) : (
