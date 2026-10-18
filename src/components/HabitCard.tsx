@@ -8,7 +8,6 @@ import { Chip } from './Chip';
 import { SubtypePicker } from './SubtypePicker';
 import { iconName } from './icons';
 import { computeStreak } from '@/lib/streaks';
-import { weekCount } from '@/lib/frequency';
 import { fromKey } from '@/lib/dates';
 import { activeSubtypes, daysWithSubtype, type SubtypeLogs } from '@/lib/subtypes';
 import { blend, fonts, sizes, useTokens, withAlpha } from '@/theme/tokens';
@@ -32,7 +31,6 @@ export const HabitCard = memo(function HabitCard({
   const t = useTokens();
   const todayDate = useMemo(() => fromKey(today), [today]);
   const streak = useMemo(() => computeStreak(habit, logs, todayDate), [habit, logs, todayDate]);
-  const thisWeek = habit.frequency === 'week' ? weekCount(habit, logs, todayDate) : 0;
   const unit = streak.unit;
 
   const subtypes = useMemo(() => activeSubtypes(habit.subtypes), [habit.subtypes]);
@@ -84,18 +82,8 @@ export const HabitCard = memo(function HabitCard({
             {/* Racha en lugar de la descripción (que se ve en el detalle): la tarjeta queda más baja. */}
             <Text numberOfLines={1} style={{ fontFamily: fonts.regular, fontSize: 13.5, color: t.muted }}>
               Racha <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${streak.current} ${unit}`}</Text>
-              {habit.frequency === 'week' ? (
-                <>
-                  {' · '}
-                  <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${thisWeek}/${habit.timesPerWeek}`}</Text>
-                  {' esta semana'}
-                </>
-              ) : (
-                <>
-                  {' · Mejor '}
-                  <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${streak.best} ${unit}`}</Text>
-                </>
-              )}
+              {' · Mejor '}
+              <Text style={{ fontFamily: fonts.medium, color: t.text }}>{`${streak.best} ${unit}`}</Text>
             </Text>
           </View>
         </Pressable>

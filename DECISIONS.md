@@ -120,6 +120,6 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 ## Tarjetas más compactas
 
 - **Pedido por el usuario**, comparando con su prototipo (tarjeta de ~170 pt: cabecera y cuadrícula, casi 4 por pantalla). Antes, ~205 px y apenas 3.
-- **Sin fila de estadísticas**: la racha pasa a la línea bajo el nombre ("Racha 12 d · Mejor 23 d"; en `week`, "Racha 3 sem · 1/3 esta semana"). La descripción ya no se ve en inicio, solo en el detalle.
+- **Sin fila de estadísticas**: la racha pasa a la línea bajo el nombre ("Racha 12 d · Mejor 23 d", también en `week`: las veces de la semana ya se ven en la cuadrícula; el detalle las sigue mostrando). La descripción ya no se ve en inicio, solo en el detalle.
 - **Cuadrícula**: 28 semanas (antes 20) con separación 4 (antes 3), como en el prototipo; las dos columnas más antiguas se desvanecen. Padding de tarjeta 14 (antes 16) y separación interna 10 (antes 14).
 - Resultado en un móvil de 390×844: tarjeta de ~167 px.
