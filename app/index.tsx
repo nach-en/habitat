@@ -48,7 +48,7 @@ export default function HomeScreen() {
         }
         contentContainerStyle={{
           paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + 120,
+          paddingBottom: insets.bottom + 24,
           paddingHorizontal: 16,
           gap: 12,
           flexGrow: 1,
@@ -63,15 +63,29 @@ export default function HomeScreen() {
                   {done} hechos · {pending} pendientes
                 </Text>
               </View>
-              <Pressable
-                onPress={() => router.push('/account')}
-                accessibilityRole="button"
-                accessibilityLabel="Cuenta"
-                className="items-center justify-center"
-                style={{ width: 44, height: 44 }}
-              >
-                <Ionicons name="person-circle-outline" size={28} color={t.muted} />
-              </Pressable>
+              <View className="items-center" style={{ gap: 6 }}>
+                <Pressable
+                  onPress={() => router.push('/account')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cuenta"
+                  className="items-center justify-center"
+                  style={{ width: 44, height: 44 }}
+                >
+                  <Ionicons name="person-circle-outline" size={28} color={t.muted} />
+                </Pressable>
+                {/* Crear hábitos es poco frecuente: botón pequeño arriba en lugar de flotante. */}
+                <Link href="/habit/new" asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Nuevo hábito"
+                    hitSlop={4}
+                    className="items-center justify-center rounded-full bg-text"
+                    style={{ width: 36, height: 36 }}
+                  >
+                    <Ionicons name="add" size={22} color={t.bg} />
+                  </Pressable>
+                </Link>
+              </View>
             </View>
             {syncError && <Banner text={syncError} />}
             {status === 'error' && habits.length > 0 && (
@@ -100,7 +114,7 @@ export default function HomeScreen() {
               </>
             ) : (
               <Text className="font-sans text-base text-muted text-center">
-                Aún no tienes hábitos. Crea el primero con el botón de abajo.
+                Aún no tienes hábitos. Crea el primero con el botón + de arriba.
               </Text>
             )}
           </View>
@@ -116,22 +130,6 @@ export default function HomeScreen() {
         )}
       />
 
-      <View
-        className="absolute left-0 right-0 items-center"
-        style={{ bottom: insets.bottom + 16 }}
-      >
-        <Link href="/habit/new" asChild>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Nuevo hábito"
-            className="flex-row items-center gap-2 rounded-full bg-text px-6"
-            style={{ minHeight: 52 }}
-          >
-            <Ionicons name="add" size={22} color={t.bg} />
-            <Text className="font-medium text-base text-bg">Nuevo hábito</Text>
-          </Pressable>
-        </Link>
-      </View>
     </View>
   );
 }

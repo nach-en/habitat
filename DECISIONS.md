@@ -123,3 +123,4 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Sin fila de estadísticas**: la racha pasa a la línea bajo el nombre ("Racha 12 d · Mejor 23 d", también en `week`: las veces de la semana ya se ven en la cuadrícula; el detalle las sigue mostrando). La descripción ya no se ve en inicio, solo en el detalle.
 - **Cuadrícula**: 28 semanas (antes 20) con separación 4 (antes 3), como en el prototipo; las dos columnas más antiguas se desvanecen. Padding de tarjeta 14 (antes 16) y separación interna 10 (antes 14).
 - Resultado en un móvil de 390×844: tarjeta de ~167 px.
+- **Botón "Nuevo hábito"** (pedido por el usuario): deja de ser flotante abajo; ahora es un botón redondo pequeño (36, zona táctil 44) bajo el icono de cuenta, porque crear hábitos es poco frecuente.
