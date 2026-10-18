@@ -3,15 +3,21 @@ import type { Habit } from '@/types';
 export const NAME_MAX = 40;
 export const DESCRIPTION_MAX = 80;
 
-type Editable = Pick<Habit, 'name' | 'frequency' | 'days' | 'timesPerWeek'>;
+type Editable = Pick<Habit, 'name' | 'goal' | 'frequency' | 'days' | 'timesPerWeek'>;
+
+/** Máximo de `times_per_week`: en un hábito a dejar, 7 sería no tener límite. */
+export function maxTimesPerWeek(goal: Habit['goal']): number {
+  return goal === 'quit' ? 6 : 7;
+}
 
 /** Errores del formulario por campo; objeto vacío si es válido. */
 export function validateHabit(h: Editable): Partial<Record<'name' | 'days' | 'timesPerWeek', string>> {
   const errors: Partial<Record<'name' | 'days' | 'timesPerWeek', string>> = {};
   if (h.name.trim() === '') errors.name = 'Ponle un nombre';
   if (h.frequency === 'days' && h.days.length === 0) errors.days = 'Elige al menos un día';
-  if (h.frequency === 'week' && (h.timesPerWeek < 1 || h.timesPerWeek > 7)) {
-    errors.timesPerWeek = 'Entre 1 y 7 veces';
+  const max = maxTimesPerWeek(h.goal);
+  if (h.frequency === 'week' && (h.timesPerWeek < 1 || h.timesPerWeek > max)) {
+    errors.timesPerWeek = `Entre 1 y ${max} veces`;
   }
   return errors;
 }

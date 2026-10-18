@@ -23,8 +23,12 @@ export function applyOp(data: HabitsData, op: Op): HabitsData {
   switch (op.kind) {
     case 'upsertHabit': {
       const current = data.habits.find((h) => h.id === op.habit.id);
-      // Las operaciones encoladas antes de existir los subtipos no los traen.
-      const habit = { ...op.habit, subtypes: op.habit.subtypes ?? current?.subtypes ?? [] };
+      // Las operaciones encoladas antes de existir los subtipos o `goal` no los traen.
+      const habit = {
+        ...op.habit,
+        goal: op.habit.goal ?? current?.goal ?? 'build',
+        subtypes: op.habit.subtypes ?? current?.subtypes ?? [],
+      };
       if (current) {
         return { ...data, habits: data.habits.map((h) => (h.id === habit.id ? habit : h)) };
       }

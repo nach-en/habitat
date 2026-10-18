@@ -9,7 +9,7 @@ import { fromKey, toKey } from '@/lib/dates';
 import { monthTitle } from '@/lib/format';
 import type { SubtypeLogs } from '@/lib/subtypes';
 import { blend, fonts, sizes, useTokens, withAlpha } from '@/theme/tokens';
-import type { DayKey, Habit } from '@/types';
+import type { CellState, DayKey, Habit } from '@/types';
 
 type Props = {
   habit: Habit;
@@ -79,7 +79,7 @@ export function MonthCalendar({
             const isToday = key === today;
             const isSelected = key === selected;
             const dots = Math.min(MAX_DOTS, subtypeLogs[key]?.length ?? 0);
-            const done = state === 'done';
+            const bg = dayBackground(state, habit.color, t.slip, inMonth);
             const names = (subtypeLogs[key] ?? [])
               .map((id) => habit.subtypes.find((s) => s.id === id)?.name)
               .filter(Boolean)
@@ -99,7 +99,7 @@ export function MonthCalendar({
                 style={{
                   height: 52,
                   borderRadius: 14,
-                  backgroundColor: done ? withAlpha(habit.color, inMonth ? 0.3 : 0.15) : 'transparent',
+                  backgroundColor: bg,
                   borderWidth: isSelected || isToday ? 1.5 : 0,
                   borderColor: isSelected ? t.text : habit.color,
                   opacity: enabled ? (inMonth ? 1 : 0.5) : 0.25,
@@ -150,6 +150,21 @@ export function MonthCalendar({
       )}
     </View>
   );
+}
+
+/** Fondo del día: color = éxito (hecho o, en un hábito a dejar, limpio); gris = recaída. */
+function dayBackground(state: CellState, color: string, slip: string, inMonth: boolean): string {
+  switch (state) {
+    case 'done':
+    case 'clean':
+      return withAlpha(color, inMonth ? 0.3 : 0.15);
+    case 'allowed':
+      return withAlpha(color, inMonth ? 0.12 : 0.06);
+    case 'slip':
+      return slip;
+    default:
+      return 'transparent';
+  }
 }
 
 function MonthButton({

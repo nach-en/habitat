@@ -1,4 +1,4 @@
-import { computeStreak } from '@/lib/streaks';
+import { computeStreak, lastSlip } from '@/lib/streaks';
 import { d, habit, logs, run } from './helpers';
 
 // Calendario de referencia: 2026-10-05 es lunes. Hoy = miércoles 2026-10-07.
@@ -108,5 +108,73 @@ describe('computeStreak · week', () => {
     const h = habit({ frequency: 'week', timesPerWeek: 2, createdOn: '2026-10-01' }); // jueves
     const l = logs('2026-10-01', '2026-10-03');
     expect(computeStreak(h, l, today)).toMatchObject({ current: 1, best: 1 });
+  });
+});
+
+describe('computeStreak · hábito a dejar', () => {
+  const quit = habit({ goal: 'quit', createdOn: '2026-10-01' });
+
+  it('sin recaídas cuenta todos los días desde el inicio, hoy incluido', () => {
+    expect(computeStreak(quit, logs(), today)).toEqual({ current: 7, best: 7, unit: 'd' });
+    expect(computeStreak(habit({ goal: 'quit', createdOn: '2026-10-07' }), logs(), today)).toMatchObject({
+      current: 1,
+      best: 1,
+    });
+  });
+
+  it('una recaída corta la racha', () => {
+    // 1–3 oct limpios, recaída el 4, 5–7 limpios.
+    expect(computeStreak(quit, logs('2026-10-04'), today)).toMatchObject({ current: 3, best: 3 });
+    expect(computeStreak(quit, logs('2026-10-02'), today)).toMatchObject({ current: 5, best: 5 });
+  });
+
+  it('una recaída hoy deja la racha en cero', () => {
+    expect(computeStreak(quit, logs('2026-10-07'), today)).toMatchObject({ current: 0, best: 6 });
+  });
+
+  it('ignora registros anteriores al inicio', () => {
+    expect(computeStreak(quit, logs('2026-09-30'), today)).toMatchObject({ current: 7 });
+  });
+
+  it("'days': solo cuentan los días elegidos", () => {
+    // Entre semana (lunes a viernes). Desde el jueves 1 oct: J V | L M X = 5 días.
+    const weekdays = habit({ goal: 'quit', frequency: 'days', days: [0, 1, 2, 3, 4], createdOn: '2026-10-01' });
+    expect(computeStreak(weekdays, logs('2026-10-03'), today)).toMatchObject({ current: 5, best: 5 });
+    expect(computeStreak(weekdays, logs('2026-10-02'), today)).toMatchObject({ current: 3, best: 3 });
+  });
+
+  it("'week': semanas sin pasar del límite; la semana en curso cuenta y se corta al pasarse", () => {
+    const max2 = habit({ goal: 'quit', frequency: 'week', timesPerWeek: 2, createdOn: '2026-09-21' });
+    // Semanas: 21 sep, 28 sep, 5 oct (en curso).
+    expect(computeStreak(max2, logs('2026-09-22', '2026-09-24', '2026-09-30'), today)).toEqual({
+      current: 3,
+      best: 3,
+      unit: 'sem',
+    });
+    // Tres veces la semana del 21: esa semana falla.
+    expect(computeStreak(max2, logs('2026-09-21', '2026-09-22', '2026-09-24'), today)).toMatchObject({
+      current: 2,
+      best: 2,
+    });
+    // Tres veces en la semana en curso: se corta ya.
+    expect(computeStreak(max2, logs('2026-10-05', '2026-10-06', '2026-10-07'), today)).toMatchObject({
+      current: 0,
+      best: 2,
+    });
+  });
+});
+
+describe('lastSlip', () => {
+  it('último día con recaída desde el inicio, o null', () => {
+    const quit = habit({ goal: 'quit', createdOn: '2026-10-01' });
+    expect(lastSlip(quit, logs(), today)).toBeNull();
+    expect(lastSlip(quit, logs('2026-09-30'), today)).toBeNull();
+    expect(lastSlip(quit, logs('2026-10-02', '2026-10-05'), today)).toBe('2026-10-05');
+  });
+
+  it("'week': solo cuentan los registros por encima del límite", () => {
+    const max1 = habit({ goal: 'quit', frequency: 'week', timesPerWeek: 1, createdOn: '2026-09-28' });
+    expect(lastSlip(max1, logs('2026-10-05'), today)).toBeNull();
+    expect(lastSlip(max1, logs('2026-09-29', '2026-10-01', '2026-10-05'), today)).toBe('2026-10-01');
   });
 });

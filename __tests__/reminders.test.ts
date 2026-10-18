@@ -47,3 +47,12 @@ describe('reminderFingerprint', () => {
     expect(reminderFingerprint({ ...h, reminderTime: '09:00' })).not.toBe(reminderFingerprint(h));
   });
 });
+
+describe('reminderContent · hábito a dejar', () => {
+  it('sin descripción usa un texto de ánimo propio', () => {
+    expect(reminderContent(habit({ goal: 'quit', name: 'Fumar' }))).toEqual({
+      title: 'Fumar',
+      body: 'Un día más sin hacerlo. ¡Sigue así!',
+    });
+  });
+});

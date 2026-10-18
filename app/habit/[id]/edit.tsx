@@ -19,7 +19,9 @@ export default function EditHabitScreen() {
     );
   }
 
-  const { id: _id, createdOn: _createdOn, ...initial } = habit;
+  // El inicio solo se edita en los hábitos a dejar ("Lo dejé el…").
+  const { id: _id, createdOn, ...rest } = habit;
+  const initial = habit.goal === 'quit' ? { ...rest, createdOn } : rest;
 
   const onDelete = async () => {
     const ok = await confirmDestructive(

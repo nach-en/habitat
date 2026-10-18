@@ -17,6 +17,14 @@ describe('rows', () => {
     expect(habitFromRow(r)).toMatchObject({ reminderTime: '21:30', days: [0, 4] });
   });
 
+  it("goal: 'quit' viaja; 'build' no se envía (valor por defecto de la columna)", () => {
+    const quit = habit({ goal: 'quit' });
+    expect(habitToRow(quit)).toMatchObject({ goal: 'quit' });
+    expect(habitFromRow(habitToRow(quit) as HabitRow)).toEqual(quit);
+    expect(habitToRow(habit())).not.toHaveProperty('goal');
+    expect(habitFromRow(habitToRow(habit()) as HabitRow).goal).toBe('build');
+  });
+
   it('subtipos ausentes en la fila → lista vacía', () => {
     const { subtypes: _s, ...r } = habitToRow(habit());
     expect(habitFromRow(r as HabitRow).subtypes).toEqual([]);

@@ -21,6 +21,14 @@ describe('applyOp', () => {
     expect(renamed.subtypeLogs.a).toEqual({ '2026-10-01': ['gym'] });
   });
 
+  it('upsertHabit sin goal (op antigua) conserva el que había o usa build', () => {
+    const d = applyOp(data(), { kind: 'upsertHabit', habit: habit({ id: 'a', goal: 'quit' }) });
+    const { goal: _g, ...old } = habit({ id: 'a', name: 'Otro' });
+    expect(applyOp(d, { kind: 'upsertHabit', habit: old as typeof d.habits[number] }).habits[0]!.goal).toBe('quit');
+    const { goal: _g2, ...fresh } = habit({ id: 'z' });
+    expect(applyOp(d, { kind: 'upsertHabit', habit: fresh as typeof d.habits[number] }).habits[1]!.goal).toBe('build');
+  });
+
   it('upsertHabit sin subtipos (op antigua) conserva los que había', () => {
     const d = applyOp(data(), { kind: 'upsertHabit', habit: habit({ id: 'a', subtypes: [{ id: 'gym', name: 'Gym' }] }) });
     const { subtypes: _s, ...old } = habit({ id: 'a', name: 'Otro' });

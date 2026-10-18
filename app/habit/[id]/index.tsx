@@ -12,10 +12,10 @@ import { useHabits } from '@/store/habits';
 import { useToday } from '@/hooks/useToday';
 import { monthOf, shiftMonth } from '@/lib/calendar';
 import { fromKey } from '@/lib/dates';
-import { dayTitle } from '@/lib/format';
+import { dayTitle, relativeDay } from '@/lib/format';
 import { weekCount } from '@/lib/frequency';
 import { canToggle } from '@/lib/grid';
-import { computeStreak } from '@/lib/streaks';
+import { computeStreak, lastSlip } from '@/lib/streaks';
 import { activeSubtypes, type SubtypeLogs } from '@/lib/subtypes';
 import { closeSheet } from '@/lib/navigation';
 import { blend, fonts, sizes, useTokens, withAlpha } from '@/theme/tokens';
@@ -62,6 +62,8 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
 
   const streak = useMemo(() => computeStreak(habit, logs, todayDate), [habit, logs, todayDate]);
   const thisWeek = habit.frequency === 'week' ? weekCount(habit, logs, todayDate) : 0;
+  const quit = habit.goal === 'quit';
+  const slip = useMemo(() => (quit ? lastSlip(habit, logs, todayDate) : null), [quit, habit, logs, todayDate]);
 
   const select = (d: DayKey) => {
     setSelected(d);
@@ -71,7 +73,10 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
   const onPressDay = (d: DayKey) => {
     if (!editable(d)) return;
     if (hasSubtypes) return select(d);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    (quit && !logs.has(d)
+      ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    ).catch(() => {});
     toggleLog(habit.id, d);
   };
 
@@ -135,7 +140,18 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
         <Pill icon="flame-outline" color={habit.color} text={`Racha ${streak.current} ${streak.unit}`} />
         <Pill icon="trophy-outline" color={habit.color} text={`Mejor ${streak.best} ${streak.unit}`} />
         {habit.frequency === 'week' && (
-          <Pill icon="disc-outline" color={habit.color} text={`${thisWeek}/${habit.timesPerWeek} esta semana`} />
+          <Pill
+            icon="disc-outline"
+            color={habit.color}
+            text={`${thisWeek}/${habit.timesPerWeek} esta semana${quit ? ' (máx.)' : ''}`}
+          />
+        )}
+        {quit && (
+          <Pill
+            icon="time-outline"
+            color={habit.color}
+            text={slip ? `Última recaída: ${relativeDay(slip, today)}` : 'Sin recaídas'}
+          />
         )}
       </View>
 
@@ -148,7 +164,13 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
         selected={hasSubtypes ? selected : null}
         onPressDay={onPressDay}
         onShiftMonth={(delta) => setMonth((m) => shiftMonth(m, delta))}
-        footer={hasSubtypes ? 'Toca un día para ver y cambiar sus subtipos' : 'Toca un día para marcarlo o desmarcarlo'}
+        footer={
+          hasSubtypes
+            ? 'Toca un día para ver y cambiar sus subtipos'
+            : quit
+              ? 'Toca un día para marcar o quitar una recaída'
+              : 'Toca un día para marcarlo o desmarcarlo'
+        }
       />
 
       {hasSubtypes && (
@@ -193,7 +215,15 @@ function RoundButton({
   );
 }
 
-function Pill({ icon, color, text }: { icon: 'flame-outline' | 'trophy-outline' | 'disc-outline'; color: string; text: string }) {
+function Pill({
+  icon,
+  color,
+  text,
+}: {
+  icon: 'flame-outline' | 'trophy-outline' | 'disc-outline' | 'time-outline';
+  color: string;
+  text: string;
+}) {
   const t = useTokens();
   return (
     <View

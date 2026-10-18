@@ -95,6 +95,7 @@ export const HabitCard = memo(function HabitCard({
           checked={logs.has(today)}
           color={habit.color}
           label={habit.name}
+          quit={habit.goal === 'quit'}
           onToggle={toggleToday}
         />
       </View>

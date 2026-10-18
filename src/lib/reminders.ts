@@ -7,6 +7,7 @@ import type { Habit } from '@/types';
 export type ReminderTrigger = { hour: number; minute: number; weekday?: number };
 
 export const DEFAULT_REMINDER_BODY = 'Es hora de tu hábito';
+export const DEFAULT_QUIT_REMINDER_BODY = 'Un día más sin hacerlo. ¡Sigue así!';
 
 /** dow propio (0 = lunes … 6 = domingo) → weekday de expo-notifications (1 = domingo). */
 export function toExpoWeekday(dow: number): number {
@@ -24,7 +25,8 @@ export function reminderTriggers(habit: Habit): ReminderTrigger[] {
 }
 
 export function reminderContent(habit: Habit): { title: string; body: string } {
-  return { title: habit.name, body: habit.description.trim() || DEFAULT_REMINDER_BODY };
+  const fallback = habit.goal === 'quit' ? DEFAULT_QUIT_REMINDER_BODY : DEFAULT_REMINDER_BODY;
+  return { title: habit.name, body: habit.description.trim() || fallback };
 }
 
 /** Huella de lo programado: si no cambia, no hace falta reprogramar. */

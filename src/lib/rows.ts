@@ -1,4 +1,4 @@
-import type { Frequency, Habit, Subtype } from '@/types';
+import type { Frequency, Goal, Habit, Subtype } from '@/types';
 
 /** Fila de `public.habits` tal como la devuelve Supabase. */
 export type HabitRow = {
@@ -8,6 +8,8 @@ export type HabitRow = {
   description: string;
   color: string;
   icon: string;
+  /** Ausente en filas anteriores a 0003_goal.sql. */
+  goal?: Goal;
   frequency: Frequency;
   days: number[];
   times_per_week: number;
@@ -29,6 +31,7 @@ export function habitFromRow(r: HabitRow): Habit {
     description: r.description,
     color: r.color,
     icon: r.icon,
+    goal: r.goal ?? 'build',
     frequency: r.frequency,
     days: [...r.days].sort((a, b) => a - b),
     timesPerWeek: r.times_per_week,
@@ -47,6 +50,9 @@ export function habitToRow(h: Habit): Omit<HabitRow, 'user_id' | 'archived_at' |
     description: h.description,
     color: h.color,
     icon: h.icon,
+    // 'build' es el valor por defecto de la columna: así los hábitos normales se
+    // siguen guardando aunque la migración 0003 aún no se haya aplicado.
+    ...(h.goal === 'quit' ? { goal: h.goal } : {}),
     frequency: h.frequency,
     days: h.days,
     times_per_week: h.timesPerWeek,

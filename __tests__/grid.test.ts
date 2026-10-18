@@ -64,6 +64,43 @@ describe('cellState', () => {
   });
 });
 
+describe('cellState · hábito a dejar', () => {
+  const quit = habit({ goal: 'quit', createdOn: '2026-10-01' });
+
+  it('sin registro es limpio, hoy incluido; con registro, recaída', () => {
+    expect(cellState(quit, d('2026-10-02'), logs(), today)).toBe('clean');
+    expect(cellState(quit, today, logs(), today)).toBe('clean');
+    expect(cellState(quit, d('2026-10-02'), logs('2026-10-02'), today)).toBe('slip');
+  });
+
+  it('antes del inicio y en el futuro, como siempre', () => {
+    expect(cellState(quit, d('2026-09-30'), logs('2026-09-30'), today)).toBe('before');
+    expect(cellState(quit, d('2026-10-08'), logs(), today)).toBe('future');
+  });
+
+  it("'days': los días no elegidos no se siguen", () => {
+    const weekdays = habit({ goal: 'quit', frequency: 'days', days: [0, 1, 2, 3, 4], createdOn: '2026-09-28' });
+    expect(cellState(weekdays, d('2026-10-03'), logs(), today)).toBe('idle'); // sábado
+    expect(cellState(weekdays, d('2026-10-02'), logs(), today)).toBe('clean'); // viernes
+  });
+
+  it("'week': registros dentro del límite permitidos; los siguientes, recaída", () => {
+    const max2 = habit({ goal: 'quit', frequency: 'week', timesPerWeek: 2, createdOn: '2026-09-28' });
+    const l = logs('2026-09-28', '2026-09-30', '2026-10-01', '2026-10-05');
+    expect(cellState(max2, d('2026-09-28'), l, today)).toBe('allowed');
+    expect(cellState(max2, d('2026-09-30'), l, today)).toBe('allowed');
+    expect(cellState(max2, d('2026-10-01'), l, today)).toBe('slip');
+    expect(cellState(max2, d('2026-10-05'), l, today)).toBe('allowed');
+    expect(cellState(max2, d('2026-09-29'), l, today)).toBe('clean');
+  });
+
+  it('con filtro: recaída con otro subtipo → idle', () => {
+    const l = logs('2026-10-02', '2026-10-03');
+    expect(cellState(quit, d('2026-10-02'), l, today, logs('2026-10-03'))).toBe('idle');
+    expect(cellState(quit, d('2026-10-03'), l, today, logs('2026-10-03'))).toBe('slip');
+  });
+});
+
 describe('canToggle', () => {
   const h = habit({ createdOn: '2026-10-01' });
   it('hasta hoy, también antes de created_on (hasta 2 años atrás)', () => {
@@ -81,12 +118,30 @@ describe('canToggle', () => {
   });
 });
 
+describe('canToggle · hábito a dejar', () => {
+  it('solo desde el inicio y en los días que se siguen', () => {
+    const quit = habit({ goal: 'quit', createdOn: '2026-10-01' });
+    expect(toKey(earliestEditable(quit, today))).toBe('2026-10-01');
+    expect(canToggle(quit, d('2026-10-01'), today)).toBe(true);
+    expect(canToggle(quit, d('2026-09-30'), today)).toBe(false);
+    expect(canToggle(quit, d('2026-10-08'), today)).toBe(false);
+
+    const weekdays = habit({ goal: 'quit', frequency: 'days', days: [0, 1, 2, 3, 4], createdOn: '2026-09-28' });
+    expect(canToggle(weekdays, d('2026-10-02'), today)).toBe(true); // viernes
+    expect(canToggle(weekdays, d('2026-10-03'), today)).toBe(false); // sábado
+  });
+});
+
 describe('withStartOn', () => {
   const h = habit({ createdOn: '2026-10-01' });
   it('adelanta el inicio solo si el día es anterior', () => {
     expect(withStartOn(h, '2026-09-15')?.createdOn).toBe('2026-09-15');
     expect(withStartOn(h, '2026-10-01')).toBeNull();
     expect(withStartOn(h, '2026-10-05')).toBeNull();
+  });
+
+  it('nunca en un hábito a dejar', () => {
+    expect(withStartOn(habit({ goal: 'quit', createdOn: '2026-10-01' }), '2026-09-15')).toBeNull();
   });
 });
 

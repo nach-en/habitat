@@ -106,10 +106,14 @@ export default function HabitGridCanvas({
     if (day && canToggle(habit, day, todayDate)) onToggleDay(toKey(day));
   };
 
+  // En un hábito a dejar el color también es el éxito (días limpios) y el gris, el fallo.
   const fill: Record<Exclude<CellState, 'future' | 'before'>, string> = {
     done: habit.color,
     missed: t.cellOff,
     idle: t.cellFaint,
+    clean: habit.color,
+    slip: t.slip,
+    allowed: withAlpha(habit.color, 0.35),
   };
   const s = layout.cell;
   const r = Math.min(sizes.cellRadius, s / 3);

@@ -12,7 +12,7 @@ export function isScheduled(habit: Habit, day: Date): boolean {
   }
 }
 
-/** Registros de la semana de `today` (desde `created_on`, hasta hoy incluido). */
+/** Registros de la semana de `today` (desde `created_on`, hasta `today` incluido; vale cualquier día). */
 export function weekCount(habit: Habit, logs: Set<DayKey>, today: Date): number {
   const created = fromKey(habit.createdOn);
   const start = weekStart(today);
@@ -29,9 +29,10 @@ export function weekCount(habit: Habit, logs: Set<DayKey>, today: Date): number 
 /**
  * ¿Cuenta el hábito para el contador de hoy?
  * 'daily'/'days': si hoy está programado. 'week': si ya se hizo hoy o aún
- * no se ha alcanzado el objetivo semanal.
+ * no se ha alcanzado el objetivo semanal. Los hábitos a dejar no cuentan.
  */
 export function isDueToday(habit: Habit, logs: Set<DayKey>, today: Date): boolean {
+  if (habit.goal === 'quit') return false;
   if (daysBetween(fromKey(habit.createdOn), today) < 0) return false;
   if (habit.frequency === 'week') {
     return logs.has(toKey(today)) || weekCount(habit, logs, today) < habit.timesPerWeek;

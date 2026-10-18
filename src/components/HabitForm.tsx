@@ -1,15 +1,20 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { randomUUID } from 'expo-crypto';
+import { subYears } from 'date-fns';
+import { DateField } from './DateField';
 import { iconKeys, iconName } from './icons';
 import { SUBTYPE_NAME_MAX, activeSubtypes, addSubtype, archiveSubtype } from '@/lib/subtypes';
 import { openSystemSettings, remindersSupported, requestPermission } from '@/lib/notifications';
-import { DESCRIPTION_MAX, NAME_MAX, shiftTime, validateHabit } from '@/lib/validation';
+import { DESCRIPTION_MAX, NAME_MAX, maxTimesPerWeek, shiftTime, validateHabit } from '@/lib/validation';
+import { BACKFILL_YEARS } from '@/lib/grid';
+import { fromKey } from '@/lib/dates';
+import { useToday } from '@/hooks/useToday';
 import { fonts, habitColors, sizes, useTokens, withAlpha } from '@/theme/tokens';
 import type { HabitInput } from '@/store/habits';
-import type { Frequency } from '@/types';
+import type { Frequency, Goal } from '@/types';
 
 type Props = {
   title: string;
@@ -24,6 +29,7 @@ const DEFAULTS: HabitInput = {
   description: '',
   color: habitColors[0],
   icon: iconKeys[0]!,
+  goal: 'build',
   frequency: 'daily',
   days: [],
   timesPerWeek: 3,
@@ -32,11 +38,23 @@ const DEFAULTS: HabitInput = {
   subtypes: [],
 };
 
-const FREQUENCIES: { value: Frequency; label: string }[] = [
-  { value: 'daily', label: 'Cada día' },
-  { value: 'days', label: 'Días concretos' },
-  { value: 'week', label: 'Veces por semana' },
+const GOALS: { value: Goal; label: string }[] = [
+  { value: 'build', label: 'Quiero empezar' },
+  { value: 'quit', label: 'Quiero dejarlo' },
 ];
+
+const FREQUENCIES: Record<Goal, { value: Frequency; label: string }[]> = {
+  build: [
+    { value: 'daily', label: 'Cada día' },
+    { value: 'days', label: 'Días concretos' },
+    { value: 'week', label: 'Veces por semana' },
+  ],
+  quit: [
+    { value: 'daily', label: 'Ningún día' },
+    { value: 'days', label: 'Días concretos' },
+    { value: 'week', label: 'Máx. por semana' },
+  ],
+};
 
 const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const DAY_NAMES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
@@ -44,18 +62,37 @@ const DAY_NAMES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábad
 export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Props) {
   const t = useTokens();
   const insets = useSafeAreaInsets();
+  const today = useToday();
   const [form, setForm] = useState<HabitInput>(initial ?? DEFAULTS);
+  const quit = form.goal === 'quit';
+  const maxTimes = maxTimesPerWeek(form.goal);
+  // Inicio de un hábito a dejar: hasta BACKFILL_YEARS atrás (o el que ya tenga, si es anterior).
+  const startOn = form.createdOn ?? today;
+  const startMin = useMemo(() => {
+    const limit = subYears(fromKey(today), BACKFILL_YEARS);
+    const current = fromKey(startOn);
+    return current < limit ? current : limit;
+  }, [today, startOn]);
   const [submitted, setSubmitted] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const errors = validateHabit(form);
   const valid = Object.keys(errors).length === 0;
 
   const set = <K extends keyof HabitInput>(k: K, v: HabitInput[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const setGoal = (goal: Goal) =>
+    setForm((f) => ({ ...f, goal, timesPerWeek: Math.min(f.timesPerWeek, maxTimesPerWeek(goal)) }));
 
   const submit = () => {
     setSubmitted(true);
     if (!valid) return;
-    onSubmit({ ...form, name: form.name.trim(), description: form.description.trim() });
+    // Solo los hábitos a dejar eligen su inicio; en los demás lo lleva el store.
+    const { createdOn: _createdOn, ...rest } = form;
+    onSubmit({
+      ...rest,
+      ...(quit ? { createdOn: startOn } : {}),
+      name: form.name.trim(),
+      description: form.description.trim(),
+    });
   };
 
   // El permiso se pide la primera vez que se activa un recordatorio (§7).
@@ -125,11 +162,22 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
           </View>
         </View>
 
+        {/* El objetivo no se cambia al editar: invertiría el significado del historial. */}
+        {!initial && (
+          <Segmented
+            options={GOALS}
+            value={form.goal}
+            onChange={setGoal}
+            color={form.color}
+            label="Tipo de hábito"
+          />
+        )}
+
         <Field label="Nombre" error={submitted ? errors.name : undefined}>
           <TextInput
             value={form.name}
             onChangeText={(v) => set('name', v)}
-            placeholder="Ej. Beber agua"
+            placeholder={quit ? 'Ej. Fumar' : 'Ej. Beber agua'}
             placeholderTextColor={t.muted}
             maxLength={NAME_MAX}
             autoFocus={!initial}
@@ -207,32 +255,22 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
         </Field>
 
         <Field label="Frecuencia" error={submitted ? (errors.days ?? errors.timesPerWeek) : undefined}>
-          <View className="flex-row rounded-2xl bg-card p-1" style={{ gap: 4 }}>
-            {FREQUENCIES.map(({ value, label }) => {
-              const selected = value === form.frequency;
-              return (
-                <Pressable
-                  key={value}
-                  onPress={() => set('frequency', value)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  className="flex-1 items-center justify-center rounded-xl"
-                  style={{ minHeight: sizes.minTouch, backgroundColor: selected ? form.color : 'transparent' }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fonts.medium,
-                      fontSize: 13.5,
-                      color: selected ? t.card : t.text,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Segmented
+            options={FREQUENCIES[form.goal]}
+            value={form.frequency}
+            onChange={(v) => set('frequency', v)}
+            color={form.color}
+            label="Frecuencia"
+          />
+          {quit && (
+            <Text style={{ fontFamily: fonts.regular, fontSize: 13.5, color: t.muted }}>
+              {form.frequency === 'daily'
+                ? 'Cada día sin hacerlo suma a la racha.'
+                : form.frequency === 'days'
+                  ? 'Elige los días en que no quieres hacerlo. Los demás no cuentan.'
+                  : 'Cada semana sin pasar del máximo suma a la racha.'}
+            </Text>
+          )}
 
           {form.frequency === 'days' && (
             <View className="mt-3 flex-row justify-between">
@@ -262,16 +300,31 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
 
           {form.frequency === 'week' && (
             <View className="mt-3 flex-row items-center justify-between rounded-2xl bg-card px-4 py-1">
-              <Text style={{ fontFamily: fonts.regular, fontSize: 16, color: t.text }}>Veces por semana</Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 16, color: t.text }}>
+                {quit ? 'Como mucho' : 'Veces por semana'}
+              </Text>
               <Stepper
                 value={String(form.timesPerWeek)}
                 onMinus={() => set('timesPerWeek', Math.max(1, form.timesPerWeek - 1))}
-                onPlus={() => set('timesPerWeek', Math.min(7, form.timesPerWeek + 1))}
+                onPlus={() => set('timesPerWeek', Math.min(maxTimes, form.timesPerWeek + 1))}
                 label="veces por semana"
               />
             </View>
           )}
         </Field>
+
+        {quit && (
+          <Field label="Inicio">
+            <DateField
+              label="Lo dejé el"
+              value={startOn}
+              min={startMin}
+              max={fromKey(today)}
+              color={form.color}
+              onChange={(d) => set('createdOn', d)}
+            />
+          </Field>
+        )}
 
         <Field label="Subtipos" error={subtypeError ?? undefined}>
           {activeSubtypes(form.subtypes).length > 0 && (
@@ -305,7 +358,7 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
               }}
               onSubmitEditing={addSubtypeFromInput}
               submitBehavior="submit"
-              placeholder="Opcional. Ej. Gym, Pádel…"
+              placeholder={quit ? 'Opcional. Ej. Tabaco, Vaper…' : 'Opcional. Ej. Gym, Pádel…'}
               placeholderTextColor={t.muted}
               maxLength={SUBTYPE_NAME_MAX}
               returnKeyType="done"
@@ -388,6 +441,50 @@ export function HabitForm({ title, initial, onSubmit, onCancel, onDelete }: Prop
         )}
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  color,
+  label,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  color: string;
+  label: string;
+}) {
+  const t = useTokens();
+  return (
+    <View className="flex-row rounded-2xl bg-card p-1" style={{ gap: 4 }} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((o) => {
+        const selected = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            className="flex-1 items-center justify-center rounded-xl"
+            style={{ minHeight: sizes.minTouch, backgroundColor: selected ? color : 'transparent' }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.medium,
+                fontSize: 13.5,
+                color: selected ? t.card : t.text,
+                textAlign: 'center',
+              }}
+            >
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 

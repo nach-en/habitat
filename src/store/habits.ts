@@ -10,8 +10,11 @@ import type { SubtypeLogs } from '@/lib/subtypes';
 import { cancelAllReminders, syncReminders } from '@/lib/notifications';
 import { clearOutbox, enqueue, flush, pendingOps, subscribeOutbox, type OutboxStatus } from '@/lib/outbox';
 
-/** Campos editables de un hábito (lo demás lo pone el store). */
-export type HabitInput = Omit<Habit, 'id' | 'createdOn'>;
+/**
+ * Campos editables de un hábito (lo demás lo pone el store). `createdOn` solo
+ * lo envía el formulario de un hábito a dejar ("Lo dejé el…").
+ */
+export type HabitInput = Omit<Habit, 'id' | 'createdOn'> & { createdOn?: DayKey };
 
 export type AccountInfo = { id: string; email: string | null };
 
@@ -33,7 +36,7 @@ type HabitsState = HabitsData & {
   toggleLog: (habitId: string, day: DayKey) => void;
   /** Marca o quita un subtipo en `day`. Quitar el último desmarca el día. */
   toggleSubtype: (habitId: string, day: DayKey, subtypeId: string) => void;
-  /** Crea un hábito con `created_on` = hoy y devuelve su id. */
+  /** Crea un hábito con `created_on` = hoy (o el elegido) y devuelve su id. */
   addHabit: (input: HabitInput) => string;
   updateHabit: (id: string, input: HabitInput) => void;
   deleteHabit: (id: string) => void;
@@ -177,14 +180,15 @@ export const useHabits = create<HabitsState>()((set, get) => {
     },
 
     addHabit: (input) => {
-      const habit: Habit = { ...input, id: randomUUID(), createdOn: toKey(new Date()) };
+      const habit: Habit = { ...input, id: randomUUID(), createdOn: input.createdOn ?? toKey(new Date()) };
       commit({ kind: 'upsertHabit', habit });
       return habit.id;
     },
 
     updateHabit: (id, input) => {
       const current = get().habits.find((h) => h.id === id);
-      if (current) commit({ kind: 'upsertHabit', habit: { ...current, ...input } });
+      // `goal` no cambia tras crear el hábito.
+      if (current) commit({ kind: 'upsertHabit', habit: { ...current, ...input, goal: current.goal } });
     },
 
     deleteHabit: (id) => commit({ kind: 'deleteHabit', id }),

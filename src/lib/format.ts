@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { DayKey } from '@/types';
-import { addDays, fromKey, toKey } from './dates';
+import { addDays, daysBetween, fromKey, toKey } from './dates';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -16,4 +16,12 @@ export function dayTitle(day: DayKey, today: DayKey): string {
 /** "oct 2026". */
 export function monthTitle(month: Date): string {
   return format(month, 'MMM yyyy', { locale: es }).replace('.', '');
+}
+
+/** "hoy", "ayer" o "hace 5 días". */
+export function relativeDay(day: DayKey, today: DayKey): string {
+  const n = daysBetween(fromKey(day), fromKey(today));
+  if (n <= 0) return 'hoy';
+  if (n === 1) return 'ayer';
+  return `hace ${n} días`;
 }

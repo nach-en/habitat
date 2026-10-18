@@ -102,3 +102,15 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Consecuencia aceptada**: los días programados entre el nuevo inicio y el antiguo sin marcar pasan a contar como fallo y pueden cortar la racha.
 - Desmarcar no mueve `created_on` hacia delante (no se sabe cuál era el inicio "real").
 - **Límite**: hasta 2 años antes de hoy (`BACKFILL_YEARS`), o desde `created_on` si es anterior. El calendario deja navegar hasta ese mes y la cuadrícula acepta esos días.
+
+## Hito 11 · Hábitos a dejar
+
+- **Modelo**: `habits.goal` (`'build' | 'quit'`, por defecto `'build'`; `0003_goal.sql`). Un registro sigue significando "lo hice ese día"; en un hábito a dejar es una recaída y el éxito es no tener registro. Solo un registro por día (sin cantidades). Los subtipos funcionan igual.
+- **El objetivo no se cambia** tras crear el hábito: invertiría el significado del historial. El selector "Quiero empezar / Quiero dejarlo" solo aparece al crear.
+- **Frecuencias**: `daily` = ningún día; `days` = esos días no (los demás no se siguen: celda `idle` y no se pueden marcar); `week` = como mucho `times_per_week` (1–6; 7 sería no tener límite).
+- **Celdas**: `clean` (sin registro, hoy incluido) en el color del hábito; `slip` en gris (`tokens.slip`); en `week`, los registros hasta el límite son `allowed` (color atenuado) y los siguientes de esa semana, `slip`. Así el color siempre significa éxito y el gris, fallo, como en los hábitos normales.
+- **Rachas**: días programados seguidos sin registro; hoy cuenta mientras no se marque una recaída, y marcarla la deja en 0. En `week`, semanas seguidas sin pasar del límite; la semana en curso cuenta, pero se corta en cuanto se pasa. El detalle muestra además "Última recaída: hace N días" (`lastSlip`).
+- **Inicio editable** ("Lo dejé el…", elegido por el usuario): en lugar del comportamiento del hito 10, el inicio se elige en el formulario (al crear y al editar, hasta 2 años atrás) y no se pueden marcar recaídas anteriores. Marcar una recaída antigua no adelanta `created_on`: convertiría en limpios todos los días intermedios.
+- **Inicio**: el check es un aspa gris (háptico de aviso al marcar). Los hábitos a dejar no cuentan en "hechos · pendientes".
+- **Recordatorio**: igual que los demás; sin descripción, el texto es "Un día más sin hacerlo. ¡Sigue así!".
+- **Compatibilidad**: `goal` solo se envía si es `'quit'`, así que los hábitos normales se siguen guardando aunque la migración aún no esté aplicada. Las operaciones antiguas del outbox sin `goal` conservan el del hábito (o `'build'`).

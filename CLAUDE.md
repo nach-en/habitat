@@ -19,7 +19,7 @@ Expo cambia mucho entre SDK: antes de usar una API de Expo/RN, consulta la docum
 
 ```
 app/                  rutas (expo-router): _layout, index, login, account, habit/new, habit/[id] (detalle), habit/[id]/edit
-src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, MonthCalendar, SubtypePicker, SubtypeDayChips, Chip, icons.ts
+src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, DateField, MonthCalendar, SubtypePicker, SubtypeDayChips, Chip, icons.ts
 src/lib/              dates, frequency, streaks, grid, calendar, format, ops, rows, subtypes, validation (puros) · supabase, auth, outbox, notifications
 src/store/habits.ts   Zustand + sincronización con Supabase
 src/theme/tokens.ts   tokens de color, medidas, fuentes
@@ -41,6 +41,7 @@ Importa desde `src/` con el alias `@/` (p. ej. `@/lib/streaks`).
 - Estado de celda: `future` (> hoy), `before` (< `created_on`), `done`, `missed` (programado, pasado, sin registro; solo `daily`/`days`), `idle`. "Hoy" se dibuja como borde encima del estado.
 - Rachas: `daily`/`days` cuentan días programados consecutivos con registro; hoy sin marcar no rompe. `week` cuenta semanas consecutivas que alcanzan `times_per_week`; la semana en curso no rompe. La mejor racha se calcula hacia delante desde `created_on`.
 - Los días anteriores a `created_on` nunca cuentan como fallo. Se pueden alternar días hasta hoy, también anteriores a `created_on` (hasta 2 años atrás): marcar uno adelanta `created_on` a ese día (`withStartOn`); desmarcarlo no lo devuelve.
+- Hábitos a dejar (`goal: 'quit'`): un registro es una recaída. Estados `clean` / `slip` / `allowed` (en `week`, registros dentro del límite). Racha = días (o semanas) seguidos sin recaída, hoy incluido. El inicio se elige en el formulario y no se marcan días anteriores (`withStartOn` no aplica).
 - La lógica pura (`dates`, `frequency`, `streaks`, `grid`) no importa nada de React ni de Expo y lleva tests.
 
 ## Comandos

@@ -9,6 +9,8 @@ export type Palette = {
   muted: string;
   cellOff: string;
   cellFaint: string;
+  /** Recaída en un hábito a dejar: gris más marcado que un fallo. */
+  slip: string;
 };
 
 // Mantener sincronizado con las variables de global.css.
@@ -20,6 +22,7 @@ export const palettes: Record<Scheme, Palette> = {
     muted: '#8a9693',
     cellOff: 'rgba(255,255,255,0.075)',
     cellFaint: 'rgba(255,255,255,0.035)',
+    slip: 'rgba(255,255,255,0.22)',
   },
   light: {
     bg: '#eceff0',
@@ -28,6 +31,7 @@ export const palettes: Record<Scheme, Palette> = {
     muted: '#667177',
     cellOff: 'rgba(0,0,0,0.07)',
     cellFaint: 'rgba(0,0,0,0.035)',
+    slip: 'rgba(0,0,0,0.2)',
   },
 };
 

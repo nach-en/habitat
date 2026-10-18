@@ -9,6 +9,7 @@ export function habit(overrides: Partial<Habit> = {}): Habit {
     description: '',
     color: '#8b8cf5',
     icon: 'leaf',
+    goal: 'build',
     frequency: 'daily',
     days: [],
     timesPerWeek: 3,

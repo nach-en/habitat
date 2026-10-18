@@ -1,7 +1,7 @@
 import { subYears } from 'date-fns';
 import type { CellState, DayKey, Habit } from '@/types';
 import { addDays, daysBetween, fromKey, startOfDay, toKey, weekStart } from './dates';
-import { isScheduled } from './frequency';
+import { isScheduled, weekCount } from './frequency';
 
 /**
  * Estado visual de la celda de `day` (ver HABITAT.md §6). "Hoy" se pinta aparte.
@@ -18,6 +18,7 @@ export function cellState(
 ): CellState {
   if (daysBetween(day, today) < 0) return 'future';
   if (daysBetween(fromKey(habit.createdOn), day) < 0) return 'before';
+  if (habit.goal === 'quit') return quitCellState(habit, day, logs, only);
   const key = toKey(day);
   if (logs.has(key)) return !only || only.has(key) ? 'done' : 'idle';
   const past = daysBetween(day, today) > 0;
@@ -25,26 +26,50 @@ export function cellState(
   return 'idle';
 }
 
+/**
+ * Hábito a dejar: sin registro es un día limpio (hoy incluido, mientras no se
+ * marque). En 'days' solo se siguen los días elegidos. En 'week' los registros
+ * hasta el límite semanal están permitidos y los siguientes son recaídas.
+ */
+function quitCellState(habit: Habit, day: Date, logs: Set<DayKey>, only?: Set<DayKey>): CellState {
+  if (!isScheduled(habit, day)) return 'idle';
+  const key = toKey(day);
+  if (!logs.has(key)) return 'clean';
+  if (only && !only.has(key)) return 'idle';
+  if (habit.frequency === 'week') return weekCount(habit, logs, day) > habit.timesPerWeek ? 'slip' : 'allowed';
+  return 'slip';
+}
+
 /** Años hacia atrás que se pueden marcar antes de `created_on`. */
 export const BACKFILL_YEARS = 2;
 
-/** Primer día que se puede marcar: `created_on` o, si es posterior, hoy menos BACKFILL_YEARS. */
+/**
+ * Primer día que se puede marcar: `created_on` o, si es posterior, hoy menos
+ * BACKFILL_YEARS. En un hábito a dejar, siempre `created_on` (su inicio se elige en el formulario).
+ */
 export function earliestEditable(habit: Habit, today: Date): Date {
   const created = fromKey(habit.createdOn);
+  if (habit.goal === 'quit') return created;
   const limit = subYears(startOfDay(today), BACKFILL_YEARS);
   return daysBetween(created, limit) < 0 ? limit : created;
 }
 
-/** Se pueden alternar días hasta hoy, también anteriores a `created_on` (ver `withStartOn`). */
+/**
+ * Se pueden alternar días hasta hoy, también anteriores a `created_on` (ver
+ * `withStartOn`). En un hábito a dejar, desde `created_on` y solo los días que se siguen.
+ */
 export function canToggle(habit: Habit, day: Date, today: Date): boolean {
-  return daysBetween(earliestEditable(habit, today), day) >= 0 && daysBetween(day, today) >= 0;
+  if (daysBetween(earliestEditable(habit, today), day) < 0 || daysBetween(day, today) < 0) return false;
+  return habit.goal !== 'quit' || isScheduled(habit, day);
 }
 
 /**
  * Marcar un día anterior a `created_on` adelanta el inicio del hábito a ese
- * día. Devuelve el hábito con el nuevo inicio, o null si no cambia.
+ * día. Devuelve el hábito con el nuevo inicio, o null si no cambia. En un
+ * hábito a dejar nunca: una recaída antigua no puede convertir en limpios los días intermedios.
  */
 export function withStartOn(habit: Habit, day: DayKey): Habit | null {
+  if (habit.goal === 'quit') return null;
   return day < habit.createdOn ? { ...habit, createdOn: day } : null;
 }
 
@@ -85,6 +110,9 @@ export function cellAt(
 const STATE_LABELS: Record<CellState, string> = {
   done: 'hecho',
   missed: 'no hecho',
+  clean: 'sin hacerlo',
+  slip: 'recaída',
+  allowed: 'dentro del límite',
   idle: 'sin marcar',
   before: 'antes de crear el hábito',
   future: 'futuro',

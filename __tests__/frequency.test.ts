@@ -31,6 +31,11 @@ describe('weekCount', () => {
     const l = logs('2026-10-04', '2026-10-05', '2026-10-07', '2026-10-08');
     expect(weekCount(habit({ frequency: 'week' }), l, today)).toBe(2);
   });
+
+  it('hasta el día que se pida', () => {
+    const l = logs('2026-10-05', '2026-10-06', '2026-10-07');
+    expect(weekCount(habit({ frequency: 'week' }), l, d('2026-10-06'))).toBe(2);
+  });
 });
 
 describe('isDueToday y todayCounts', () => {
@@ -44,6 +49,14 @@ describe('isDueToday y todayCounts', () => {
     expect(isDueToday(weekly, logs('2026-10-05'), today)).toBe(true);
     expect(isDueToday(weekly, logs('2026-10-05', '2026-10-06'), today)).toBe(false);
     expect(isDueToday(weekly, logs('2026-10-05', '2026-10-07'), today)).toBe(true);
+  });
+
+  it('los hábitos a dejar no cuentan', () => {
+    expect(isDueToday(habit({ goal: 'quit' }), logs(), today)).toBe(false);
+    expect(todayCounts([habit({ id: 'q', goal: 'quit' })], { q: logs('2026-10-07') }, today)).toEqual({
+      done: 0,
+      pending: 0,
+    });
   });
 
   it('cuenta hechos y pendientes de hoy', () => {
