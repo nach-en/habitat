@@ -11,13 +11,11 @@ const NONE: string[] = [];
 export function SubtypeDayChips({
   habit,
   day,
-  size,
   onPicked,
 }: {
   habit: Habit;
   day: DayKey;
-  size?: 'md' | 'lg';
-  /** Tras marcar o quitar un chip (la hoja de inicio se cierra sola). */
+  /** Tras marcar o quitar un chip (la hoja se cierra sola). */
   onPicked?: () => void;
 }) {
   const marked = useHabits((s) => s.subtypeLogs[habit.id]?.[day] ?? NONE);
@@ -38,7 +36,6 @@ export function SubtypeDayChips({
           key={s.id}
           label={s.name}
           color={habit.color}
-          size={size}
           selected={marked.includes(s.id)}
           onPress={() => tap(() => toggleSubtype(habit.id, day, s.id))}
         />
@@ -46,7 +43,6 @@ export function SubtypeDayChips({
       <Chip
         label="Sin subtipo"
         color={habit.color}
-        size={size}
         selected={done && marked.length === 0}
         disabled={marked.length > 0}
         onPress={() => tap(() => toggleLog(habit.id, day))}

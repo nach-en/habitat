@@ -6,13 +6,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { HabitGrid } from '@/components/HabitGrid';
 import { MonthCalendar } from '@/components/MonthCalendar';
-import { SubtypeDayChips } from '@/components/SubtypeDayChips';
+import { SubtypePicker } from '@/components/SubtypePicker';
 import { iconName } from '@/components/icons';
 import { useHabits } from '@/store/habits';
 import { useToday } from '@/hooks/useToday';
 import { monthOf, shiftMonth } from '@/lib/calendar';
 import { fromKey } from '@/lib/dates';
-import { dayTitle, relativeDay } from '@/lib/format';
+import { relativeDay } from '@/lib/format';
 import { weekCount } from '@/lib/frequency';
 import { canToggle } from '@/lib/grid';
 import { computeStreak, lastSlip } from '@/lib/streaks';
@@ -55,24 +55,23 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
   const hasSubtypes = activeSubtypes(habit.subtypes).length > 0;
   const editable = (d: DayKey) => canToggle(habit, fromKey(d), todayDate);
 
-  // El día que llega desde la cuadrícula de inicio decide el mes y la selección.
+  // El día que llega desde la cuadrícula de inicio decide el mes.
   const start = initialDay && editable(initialDay) ? initialDay : today;
   const [month, setMonth] = useState(() => monthOf(fromKey(start)));
-  const [selected, setSelected] = useState<DayKey>(start);
+  // Día cuyos subtipos se están marcando en la hoja (null = cerrada).
+  const [pickerDay, setPickerDay] = useState<DayKey | null>(null);
 
   const streak = useMemo(() => computeStreak(habit, logs, todayDate), [habit, logs, todayDate]);
   const thisWeek = habit.frequency === 'week' ? weekCount(habit, logs, todayDate) : 0;
   const quit = habit.goal === 'quit';
   const slip = useMemo(() => (quit ? lastSlip(habit, logs, todayDate) : null), [quit, habit, logs, todayDate]);
 
-  const select = (d: DayKey) => {
-    setSelected(d);
-    setMonth(monthOf(fromKey(d)));
-  };
+  const showDay = (d: DayKey) => setMonth(monthOf(fromKey(d)));
 
   const onPressDay = (d: DayKey) => {
     if (!editable(d)) return;
-    if (hasSubtypes) return select(d);
+    // Con subtipos, la misma hoja que en inicio: tocar el día y luego el subtipo.
+    if (hasSubtypes) return setPickerDay(d);
     (quit && !logs.has(d)
       ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
       : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -131,7 +130,7 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
           logs={logs}
           today={today}
           weeks={26}
-          onToggleDay={select}
+          onToggleDay={showDay}
           activateHint="verlo en el calendario"
         />
       </View>
@@ -161,12 +160,12 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
         subtypeLogs={subtypeLogs}
         today={today}
         month={month}
-        selected={hasSubtypes ? selected : null}
+        selected={pickerDay}
         onPressDay={onPressDay}
         onShiftMonth={(delta) => setMonth((m) => shiftMonth(m, delta))}
         footer={
           hasSubtypes
-            ? 'Toca un día para ver y cambiar sus subtipos'
+            ? 'Toca un día para marcar o quitar un subtipo'
             : quit
               ? 'Toca un día para marcar o quitar una recaída'
               : 'Toca un día para marcarlo o desmarcarlo'
@@ -174,19 +173,7 @@ function Detail({ habit, initialDay }: { habit: Habit; initialDay: DayKey | unde
       />
 
       {hasSubtypes && (
-        <View
-          style={{
-            backgroundColor: blend(habit.color, t.card, 0.04),
-            borderRadius: sizes.cardRadius,
-            padding: sizes.cardPadding,
-            gap: 12,
-          }}
-        >
-          <Text accessibilityRole="header" style={{ fontFamily: fonts.medium, fontSize: 17, color: t.text }}>
-            {dayTitle(selected, today)}
-          </Text>
-          <SubtypeDayChips habit={habit} day={selected} size="lg" />
-        </View>
+        <SubtypePicker habit={habit} day={pickerDay} today={today} onClose={() => setPickerDay(null)} />
       )}
     </ScrollView>
   );
