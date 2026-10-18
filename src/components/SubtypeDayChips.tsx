@@ -8,7 +8,18 @@ import type { DayKey, Habit } from '@/types';
 const NONE: string[] = [];
 
 /** Chips para marcar los subtipos de un día (varios a la vez) o "Sin subtipo". */
-export function SubtypeDayChips({ habit, day, size }: { habit: Habit; day: DayKey; size?: 'md' | 'lg' }) {
+export function SubtypeDayChips({
+  habit,
+  day,
+  size,
+  onPicked,
+}: {
+  habit: Habit;
+  day: DayKey;
+  size?: 'md' | 'lg';
+  /** Tras marcar o quitar un chip (la hoja de inicio se cierra sola). */
+  onPicked?: () => void;
+}) {
   const marked = useHabits((s) => s.subtypeLogs[habit.id]?.[day] ?? NONE);
   const done = useHabits((s) => s.logs[habit.id]?.has(day) ?? false);
   const toggleLog = useHabits((s) => s.toggleLog);
@@ -17,6 +28,7 @@ export function SubtypeDayChips({ habit, day, size }: { habit: Habit; day: DayKe
   const tap = (fn: () => void) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     fn();
+    onPicked?.();
   };
 
   return (

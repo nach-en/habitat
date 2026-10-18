@@ -113,4 +113,5 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Inicio editable** ("Lo dejé el…", elegido por el usuario): en lugar del comportamiento del hito 10, el inicio se elige en el formulario (al crear y al editar, hasta 2 años atrás) y no se pueden marcar recaídas anteriores. Marcar una recaída antigua no adelanta `created_on`: convertiría en limpios todos los días intermedios.
 - **Inicio**: el check es un aspa gris (háptico de aviso al marcar). Los hábitos a dejar no cuentan en "hechos · pendientes".
 - **Recordatorio**: igual que los demás; sin descripción, el texto es "Un día más sin hacerlo. ¡Sigue así!".
+- **Hoja de subtipos sin "Listo"** (pedido por el usuario): tocar un chip lo marca o lo quita y cierra la hoja, así que se marca con dos toques (check + subtipo). Para añadir un segundo subtipo el mismo día se vuelve a abrir. Tocar fuera sigue cerrándola. En el detalle los chips no cambian.
 - **Compatibilidad**: `goal` solo se envía si es `'quit'`, así que los hábitos normales se siguen guardando aunque la migración aún no esté aplicada. Las operaciones antiguas del outbox sin `goal` conservan el del hábito (o `'build'`).

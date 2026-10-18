@@ -13,7 +13,10 @@ type Props = {
   onClose: () => void;
 };
 
-/** Hoja inferior para marcar qué subtipos se hicieron un día (varios a la vez). */
+/**
+ * Hoja inferior para marcar un subtipo del día. Cada toque cierra la hoja; para
+ * añadir otro subtipo el mismo día se vuelve a abrir.
+ */
 export function SubtypePicker({ habit, day, today, onClose }: Props) {
   const t = useTokens();
   const insets = useSafeAreaInsets();
@@ -48,16 +51,8 @@ export function SubtypePicker({ habit, day, today, onClose }: Props) {
                 <Text style={{ fontFamily: fonts.regular, fontSize: 14, color: t.muted }}>{dayTitle(day, today)}</Text>
               </View>
 
-              <SubtypeDayChips habit={habit} day={day} />
-
-              <Pressable
-                onPress={onClose}
-                accessibilityRole="button"
-                className="items-center justify-center rounded-2xl"
-                style={{ minHeight: 52, backgroundColor: t.text }}
-              >
-                <Text style={{ fontFamily: fonts.medium, fontSize: 16, color: t.bg }}>Listo</Text>
-              </Pressable>
+              {/* Un toque en un chip lo marca y cierra la hoja: abrir y elegir, dos toques. */}
+              <SubtypeDayChips habit={habit} day={day} onPicked={onClose} />
             </>
           )}
         </Pressable>
