@@ -47,14 +47,14 @@ export const habitColors = [
 
 export const sizes = {
   cardRadius: 24,
-  cardPadding: 16,
+  cardPadding: 14,
   iconTile: 44,
   iconTileRadius: 14,
   check: 48,
   checkRadius: 15,
   cellGap: 3,
   cellRadius: 3.5,
-  gridWeeks: 20,
+  gridWeeks: 30,
   minTouch: 44,
 } as const;
 

@@ -116,3 +116,7 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Hoja de subtipos sin "Listo"** (pedido por el usuario): tocar un chip lo marca o lo quita y cierra la hoja, así que se marca con dos toques (check + subtipo). Para añadir un segundo subtipo el mismo día se vuelve a abrir. Tocar fuera sigue cerrándola.
 - **Detalle con subtipos** (pedido por el usuario): tocar un día del calendario abre esa misma hoja (en lugar de seleccionarlo y mostrar chips debajo), así que también son dos toques. La cuadrícula del detalle solo lleva el calendario al mes de ese día. Los chips grandes (`size="lg"`) desaparecen.
 - **Compatibilidad**: `goal` solo se envía si es `'quit'`, así que los hábitos normales se siguen guardando aunque la migración aún no esté aplicada. Las operaciones antiguas del outbox sin `goal` conservan el del hábito (o `'build'`).
+
+## Tarjetas más compactas
+
+- **Pedido por el usuario**: en el prototipo cabían casi 4 hábitos por pantalla y en la app apenas 3. La cuadrícula de inicio pasa de 20 a 30 semanas (celdas más pequeñas, más historial), el padding de tarjeta de 16 a 14 y la separación interna de 14 a 10. En un móvil de 812 px la tarjeta baja de ~205 a ~185 px (con subtipos, de ~252 a ~219).

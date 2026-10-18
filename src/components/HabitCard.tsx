@@ -55,7 +55,7 @@ export const HabitCard = memo(function HabitCard({
         borderWidth: 1,
         borderRadius: sizes.cardRadius,
         padding: sizes.cardPadding,
-        gap: 14,
+        gap: 10,
       }}
     >
       <View className="flex-row items-center gap-3">
