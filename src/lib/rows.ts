@@ -18,6 +18,8 @@ export type HabitRow = {
   reminder_time: string;
   created_on: string;
   subtypes: Subtype[];
+  /** Orden en inicio (0004_position.sql). Ausente o null = al final. Solo lo escribe `reorderHabits`. */
+  position?: number | null;
   archived_at?: string | null;
   created_at?: string;
 };
@@ -43,7 +45,7 @@ export function habitFromRow(r: HabitRow): Habit {
 }
 
 /** Columnas que escribe la app (user_id lo pone la BD con auth.uid()). */
-export function habitToRow(h: Habit): Omit<HabitRow, 'user_id' | 'archived_at' | 'created_at'> {
+export function habitToRow(h: Habit): Omit<HabitRow, 'user_id' | 'position' | 'archived_at' | 'created_at'> {
   return {
     id: h.id,
     name: h.name,

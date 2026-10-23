@@ -1,5 +1,6 @@
 import type { DayKey, Habit } from '@/types';
 import type { SubtypeLogs } from './subtypes';
+import { orderBy } from './order';
 
 /** Cambio sobre los datos del usuario: se aplica en local y se envía a Supabase. */
 export type Op =
@@ -8,7 +9,9 @@ export type Op =
   /** Marca el día como hecho (sin subtipo) o lo desmarca entero, con sus subtipos. */
   | { kind: 'setLog'; habitId: string; day: DayKey; done: boolean }
   /** Marca o quita un subtipo del día. Marcarlo marca el día como hecho. */
-  | { kind: 'setSubtype'; habitId: string; day: DayKey; subtypeId: string; on: boolean };
+  | { kind: 'setSubtype'; habitId: string; day: DayKey; subtypeId: string; on: boolean }
+  /** Nuevo orden de inicio: `ids[i]` pasa a la posición `i`. */
+  | { kind: 'reorderHabits'; ids: string[] };
 
 export type HabitsData = {
   habits: Habit[];
@@ -72,5 +75,7 @@ export function applyOp(data: HabitsData, op: Op): HabitsData {
         subtypeLogs: { ...data.subtypeLogs, [op.habitId]: next.length > 0 ? { ...rest, [op.day]: next } : rest },
       };
     }
+    case 'reorderHabits':
+      return { ...data, habits: orderBy(data.habits, op.ids) };
   }
 }

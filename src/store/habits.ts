@@ -5,6 +5,7 @@ import { toKey } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
 import { applyOp, type HabitsData, type Op } from '@/lib/ops';
 import { withStartOn } from '@/lib/grid';
+import { byPosition, moveItem } from '@/lib/order';
 import { habitFromRow, type HabitRow, type LogRow } from '@/lib/rows';
 import type { SubtypeLogs } from '@/lib/subtypes';
 import { cancelAllReminders, syncReminders } from '@/lib/notifications';
@@ -40,6 +41,8 @@ type HabitsState = HabitsData & {
   addHabit: (input: HabitInput) => string;
   updateHabit: (id: string, input: HabitInput) => void;
   deleteHabit: (id: string) => void;
+  /** Mueve el hábito de la posición `from` a `to` en inicio. */
+  moveHabit: (from: number, to: number) => void;
 };
 
 const PAGE = 1000;
@@ -52,7 +55,8 @@ async function fetchAll(): Promise<HabitsData> {
     .order('created_at');
   if (error) throw error;
 
-  const habits = (rows as HabitRow[]).map(habitFromRow);
+  // Por `position` en local: sin la migración 0004 la columna no existe y ordenar en la consulta fallaría.
+  const habits = byPosition(rows as HabitRow[]).map(habitFromRow);
   const logs: Record<string, Set<DayKey>> = Object.fromEntries(habits.map((h) => [h.id, new Set<DayKey>()]));
   const subtypeLogs: Record<string, SubtypeLogs> = Object.fromEntries(habits.map((h) => [h.id, {}]));
 
@@ -192,5 +196,11 @@ export const useHabits = create<HabitsState>()((set, get) => {
     },
 
     deleteHabit: (id) => commit({ kind: 'deleteHabit', id }),
+
+    moveHabit: (from, to) => {
+      if (from === to) return;
+      const ids = moveItem(get().habits, from, to).map((h) => h.id);
+      commit({ kind: 'reorderHabits', ids });
+    },
   };
 });

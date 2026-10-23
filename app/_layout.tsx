@@ -3,6 +3,7 @@ import '../global.css';
 import { useEffect } from 'react';
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
@@ -51,7 +52,7 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style={t.scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
@@ -67,6 +68,6 @@ export default function RootLayout() {
         <Stack.Screen name="account" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
       <ConfirmDialog />
-    </>
+    </GestureHandlerRootView>
   );
 }
