@@ -83,6 +83,13 @@ async function send(op: Op): Promise<{ message: string; code?: string } | null> 
             .eq('subtype_id', op.subtypeId);
       return error;
     }
+    case 'reorderHabits': {
+      // Una fila por hábito; los que ya no existen no actualizan nada.
+      const results = await Promise.all(
+        op.ids.map((id, position) => supabase.from('habits').update({ position }).eq('id', id)),
+      );
+      return results.find((r) => r.error)?.error ?? null;
+    }
   }
 }
 

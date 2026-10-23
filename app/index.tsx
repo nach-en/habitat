@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useHabits } from '@/store/habits';
 import { HabitCard } from '@/components/HabitCard';
+import { ReorderableList } from '@/components/ReorderableList';
 import { todayCounts } from '@/lib/frequency';
 import { fromKey } from '@/lib/dates';
 import { useToday } from '@/hooks/useToday';
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const logs = useHabits((s) => s.logs);
   const subtypeLogs = useHabits((s) => s.subtypeLogs);
   const toggleLog = useHabits((s) => s.toggleLog);
+  const moveHabit = useHabits((s) => s.moveHabit);
   const status = useHabits((s) => s.status);
   const loadError = useHabits((s) => s.loadError);
   const syncError = useHabits((s) => s.sync.error);
@@ -34,9 +36,12 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <FlatList
+      {/* Mantener pulsada una tarjeta y arrastrarla cambia el orden. */}
+      <ReorderableList
         data={habits}
-        keyExtractor={(h) => h.id}
+        keyOf={(h) => h.id}
+        onMove={moveHabit}
+        gap={12}
         refreshControl={
           <RefreshControl
             refreshing={status === 'loading' && habits.length > 0}
@@ -53,7 +58,7 @@ export default function HomeScreen() {
           gap: 12,
           flexGrow: 1,
         }}
-        ListHeaderComponent={
+        header={
           <View className="mb-2" style={{ gap: 12 }}>
             <View className="flex-row items-start justify-between">
               <View>
@@ -93,7 +98,7 @@ export default function HomeScreen() {
             )}
           </View>
         }
-        ListEmptyComponent={
+        empty={
           <View className="flex-1 items-center justify-center px-8" style={{ gap: 16 }}>
             {status === 'loading' || status === 'idle' ? (
               <ActivityIndicator color={t.muted} />
@@ -119,7 +124,7 @@ export default function HomeScreen() {
             )}
           </View>
         }
-        renderItem={({ item }) => (
+        renderItem={(item) => (
           <HabitCard
             habit={item}
             logs={logs[item.id] ?? EMPTY}

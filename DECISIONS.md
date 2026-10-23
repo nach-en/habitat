@@ -127,3 +127,13 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Cuadrícula**: 28 semanas (antes 20) con separación 4 (antes 3), como en el prototipo; las dos columnas más antiguas se desvanecen. Padding de tarjeta 14 (antes 16) y separación interna 10 (antes 14).
 - Resultado en un móvil de 390×844: tarjeta de ~167 px.
 - **Botón "Nuevo hábito"** (pedido por el usuario): deja de ser flotante abajo; ahora es un botón redondo pequeño (36, zona táctil 44) bajo el icono de cuenta, porque crear hábitos es poco frecuente.
+
+## Reordenar hábitos en inicio
+
+- **Gesto**: mantener pulsada una tarjeta 350 ms y arrastrarla (`ReorderableList`, con `react-native-gesture-handler` + Reanimated). Si el dedo se mueve antes, es scroll normal; los toques cortos (abrir detalle, check, cuadrícula) no cambian. Al empezar, háptico medio; la tarjeta crece un 3 % y las demás se apartan. Cerca de los bordes la lista se desplaza sola.
+- **Dependencia**: `react-native-gesture-handler` pasa a ser directa con la versión de Expo SDK 57 (`~2.32.0`; antes llegaba la 3.x como dependencia de `expo-router`). Es nativa: **hace falta un APK nuevo**.
+- **Lista sin virtualizar**: `FlatList` se sustituye por un `ScrollView` que pinta todas las tarjetas, porque el arrastre necesita las alturas de todas. Con decenas de hábitos no se nota.
+- **Modelo**: `habits.position` (`integer`, nullable; `0004_position.sql`). En local el orden es el del array `habits`; al descargar se ordena por `position` en el cliente y los `null` (nunca reordenados) van al final por `created_at`. Así un hábito nuevo va al final sin tener que calcular su posición.
+- **Operación** `reorderHabits { ids }`: guarda el orden completo, no un "mover"; es idempotente y al reaplicarla sobre datos recién descargados da el mismo resultado. En Supabase es un `update position = i` por hábito (no un `upsert`, que exigiría todas las columnas).
+- **Compatibilidad**: `upsertHabit` nunca envía `position` (ni la conserva: un editar no cambia el orden), así que los hábitos se siguen guardando aunque la migración no esté aplicada y las operaciones antiguas del outbox valen tal cual. Sin la migración, reordenar falla con error de la BD (se descarta y se avisa) y el orden se pierde al recargar. Tampoco se ordena en la consulta (`.order('position')` fallaría sin la columna).
+- **Web**: `touchAction: pan-y` en las tarjetas, para que en móvil por web se pueda hacer scroll empezando sobre ellas.

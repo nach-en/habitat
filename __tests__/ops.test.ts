@@ -36,6 +36,13 @@ describe('applyOp', () => {
     expect(r.habits[0]!.subtypes).toEqual([{ id: 'gym', name: 'Gym' }]);
   });
 
+  it('reorderHabits sigue los ids y deja al final los que faltan', () => {
+    const d: HabitsData = { ...data(), habits: ['a', 'b', 'c'].map((id) => habit({ id })) };
+    const r = applyOp(d, { kind: 'reorderHabits', ids: ['c', 'x', 'a'] });
+    expect(r.habits.map((h) => h.id)).toEqual(['c', 'a', 'b']);
+    expect(r.logs).toBe(d.logs);
+  });
+
   it('deleteHabit quita hábito y registros', () => {
     const r = applyOp(data(), { kind: 'deleteHabit', id: 'a' });
     expect(r.habits).toHaveLength(0);
