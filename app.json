@@ -56,6 +56,13 @@
     "scheme": "habitat",
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "418e27eb-76fe-436f-bcde-3bb4afccaa08"
+      }
+    },
+    "owner": "nachen"
   }
 }

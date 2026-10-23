@@ -79,7 +79,7 @@ Decisiones no especificadas en `HABITAT.md`, por hito.
 - **Errores de red**: además del aviso de sincronización y del error de carga inicial, si falla una recarga con hábitos ya en pantalla aparece un aviso. Deslizar hacia abajo recarga.
 - **EAS**: `eas.json` con perfil `preview` que genera un APK (`buildType: apk`).
 - **APK con EAS, no con Gradle local** (elegido por el usuario): compilar en local es demasiado lento en su Mac. `eas build -p android --profile preview` genera un APK instalable directamente en el Pixel (sin Play Store).
-- **Variables de Supabase en EAS**: `.env` está en `.gitignore` y EAS no lo sube, así que `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY` se dan de alta con `eas env:create` en el entorno de cada perfil (`environment` en `eas.json`: `preview` → `preview`). Sin ellas el APK se cierra al abrirse. La anon key es pública (va dentro del bundle), así que basta con visibilidad *plain text* o *sensitive*.
+- **Variables de Supabase en EAS**: `.env` está en `.gitignore` y EAS no lo sube, así que `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY` se dan de alta con `eas env:set` en el entorno de cada perfil (`environment` en `eas.json`: `preview` → `preview`). Sin ellas el APK se cierra al abrirse. La anon key es pública (va dentro del bundle), así que basta con visibilidad *plain text* o *sensitive*.
 - Las notificaciones locales no necesitan Firebase (`google-services.json` solo hace falta para *push* remotas).
 
 ## Hito 8 · Subtipos
