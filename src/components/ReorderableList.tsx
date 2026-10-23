@@ -44,6 +44,8 @@ type Drag = {
   dy: SharedValue<number>;
   /** Soltada: va hacia su hueco y ya no sigue al dedo. */
   settling: SharedValue<boolean>;
+  /** Claves y alturas en el orden actual. */
+  order: SharedValue<string[]>;
   heights: SharedValue<number[]>;
 };
 
@@ -75,9 +77,10 @@ export function ReorderableList<T>({
     target: useSharedValue(-1),
     dy: useSharedValue(0),
     settling: useSharedValue(false),
+    order: useSharedValue<string[]>([]),
     heights: useSharedValue<number[]>([]),
   };
-  const { active, target, dy, settling, heights } = drag;
+  const { active, target, dy, settling, order, heights } = drag;
   const [dragging, setDragging] = useState(false);
 
   // Alturas por clave (las posiciones se deducen de ellas: en web onLayout no avisa si solo cambia la posición).
@@ -86,8 +89,9 @@ export function ReorderableList<T>({
   const keysRef = useRef(keys);
   keysRef.current = keys;
   const syncHeights = useCallback(() => {
+    order.value = keysRef.current;
     heights.value = keysRef.current.map((k) => heightByKey.current.get(k) ?? 0);
-  }, [heights]);
+  }, [order, heights]);
   const onHeight = useCallback(
     (key: string, h: number) => {
       heightByKey.current.set(key, h);
@@ -97,14 +101,17 @@ export function ReorderableList<T>({
   );
 
   /** Recoloca la tarjeta arrastrada y calcula dónde quedaría. */
-  const follow = (scroll: number) => {
-    'worklet';
-    const from = active.value;
-    if (from < 0 || settling.value) return;
-    dy.value = translation.value + scroll - startScroll.value;
-    const mids = centers(heights.value, gap);
-    target.value = dropIndex(mids, from, (mids[from] ?? 0) + dy.value);
-  };
+  const follow = useCallback(
+    (scroll: number) => {
+      'worklet';
+      const from = active.value;
+      if (from < 0 || settling.value) return;
+      dy.value = translation.value + scroll - startScroll.value;
+      const mids = centers(heights.value, gap);
+      target.value = dropIndex(mids, from, (mids[from] ?? 0) + dy.value);
+    },
+    [active, settling, dy, translation, startScroll, heights, gap, target],
+  );
 
   // Cerca de los bordes, la lista se desplaza sola.
   const autoScroll = useFrameCallback(() => {
@@ -156,34 +163,41 @@ export function ReorderableList<T>({
     [onMove, reset],
   );
 
-  const gestureFor = (index: number) =>
-    Gesture.Pan()
-      .activateAfterLongPress(LONG_PRESS)
-      .onStart((e) => {
-        if (active.value >= 0) return;
-        active.value = index;
-        target.value = index;
-        settling.value = false;
-        startScroll.value = scrollY.value;
-        translation.value = 0;
-        fingerY.value = e.absoluteY;
-        dy.value = 0;
-        scheduleOnRN(onStart);
-      })
-      .onUpdate((e) => {
-        if (active.value !== index) return;
-        translation.value = e.translationY;
-        fingerY.value = e.absoluteY;
-        follow(scrollY.value);
-      })
-      .onFinalize(() => {
-        if (active.value !== index || settling.value) return;
-        settling.value = true;
-        const to = target.value;
-        dy.value = withTiming(dropOffset(heights.value, gap, index, to), { duration: 160 }, () => {
-          scheduleOnRN(onDrop, index, to);
-        });
-      });
+  // Gestos estables (inicio se repinta con cada cambio de sincronización): cada uno
+  // busca su índice actual por clave en `order` en lugar de capturarlo.
+  const gestureFor = useCallback(
+    (key: string) =>
+      Gesture.Pan()
+        .activateAfterLongPress(LONG_PRESS)
+        .onStart((e) => {
+          const index = order.value.indexOf(key);
+          if (index < 0 || active.value >= 0) return;
+          active.value = index;
+          target.value = index;
+          settling.value = false;
+          startScroll.value = scrollY.value;
+          translation.value = 0;
+          fingerY.value = e.absoluteY;
+          dy.value = 0;
+          scheduleOnRN(onStart);
+        })
+        .onUpdate((e) => {
+          if (order.value[active.value] !== key) return;
+          translation.value = e.translationY;
+          fingerY.value = e.absoluteY;
+          follow(scrollY.value);
+        })
+        .onFinalize(() => {
+          const index = active.value;
+          if (order.value[index] !== key || settling.value) return;
+          settling.value = true;
+          const to = target.value;
+          dy.value = withTiming(dropOffset(heights.value, gap, index, to), { duration: 160 }, () => {
+            scheduleOnRN(onDrop, index, to);
+          });
+        }),
+    [active, target, settling, startScroll, scrollY, translation, fingerY, dy, order, heights, gap, follow, onStart, onDrop],
+  );
 
   return (
     <Animated.ScrollView
@@ -202,7 +216,7 @@ export function ReorderableList<T>({
           {data.map((item, index) => {
             const key = keys[index]!;
             return (
-              <Item key={key} id={key} index={index} gap={gap} drag={drag} gesture={gestureFor(index)} onHeight={onHeight}>
+              <Item key={key} id={key} gap={gap} drag={drag} makeGesture={gestureFor} onHeight={onHeight}>
                 {renderItem(item)}
               </Item>
             );
@@ -215,18 +229,19 @@ export function ReorderableList<T>({
 
 type ItemProps = {
   id: string;
-  index: number;
   gap: number;
   drag: Drag;
-  gesture: ReturnType<typeof Gesture.Pan>;
+  makeGesture: (key: string) => ReturnType<typeof Gesture.Pan>;
   onHeight: (key: string, h: number) => void;
   children: ReactNode;
 };
 
-function Item({ id, index, gap, drag, gesture, onHeight, children }: ItemProps) {
-  const { active, target, dy, settling, heights } = drag;
+function Item({ id, gap, drag, makeGesture, onHeight, children }: ItemProps) {
+  const gesture = useMemo(() => makeGesture(id), [makeGesture, id]);
+  const { active, target, dy, settling, order, heights } = drag;
   const style = useAnimatedStyle(() => {
     const a = active.value;
+    const index = order.value.indexOf(id);
     if (a < 0) return { zIndex: 0, transform: [{ translateY: 0 }, { scale: 1 }] };
     if (a === index) {
       return {
