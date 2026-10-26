@@ -8,8 +8,9 @@ import {
 } from 'react-native-android-widget';
 import { useHabits } from '@/store/habits';
 import { applyOp, type HabitsData } from '@/lib/ops';
+import { toKey } from '@/lib/dates';
 import { enqueue, subscribeOutbox } from '@/lib/outbox';
-import { fromSnapshot, todayRows, todaySummary, toSnapshot, widgetToggle } from '@/lib/widget';
+import { fromSnapshot, todayRows, todaySummary, toSnapshot, widgetClick, type WidgetClick } from '@/lib/widget';
 import { TOGGLE, TodayWidget } from './TodayWidget';
 
 /**
@@ -33,14 +34,14 @@ async function currentData(): Promise<HabitsData | null> {
   return raw ? fromSnapshot(raw) : null;
 }
 
-async function view(): Promise<WidgetRepresentation> {
+async function view(width: number): Promise<WidgetRepresentation> {
   const data = await currentData();
   const today = new Date();
   const rows = data && todayRows(data, today);
   const summary = data ? todaySummary(data, today) : { done: 0, total: 0 };
   return {
-    light: <TodayWidget scheme="light" rows={rows} summary={summary} />,
-    dark: <TodayWidget scheme="dark" rows={rows} summary={summary} />,
+    light: <TodayWidget scheme="light" rows={rows} summary={summary} width={width} />,
+    dark: <TodayWidget scheme="dark" rows={rows} summary={summary} width={width} />,
   };
 }
 
@@ -61,21 +62,22 @@ function waitForSync(ms: number): Promise<void> {
 }
 
 /**
- * Marca o desmarca hoy. Termina con el cambio ya aplicado en local; `synced`
- * termina cuando se ha intentado enviar.
+ * Atiende un toque en el check o en un chip. Termina con el cambio ya aplicado
+ * en local; `synced` termina cuando se ha intentado enviar.
  */
-async function toggle(habitId: string): Promise<{ synced: Promise<void> }> {
+async function toggle(click: WidgetClick): Promise<{ synced: Promise<void> }> {
   const today = new Date();
   const s = useHabits.getState();
   if (s.status === 'ready' && s.account) {
-    // App abierta (o en segundo plano) en este mismo proceso: lo hace el store.
-    const op = widgetToggle(s, habitId, today);
-    if (op?.kind === 'setLog') s.toggleLog(habitId, op.day);
+    // App abierta (o en segundo plano) en este mismo proceso: lo hace el store, igual que en inicio.
+    const op = widgetClick(s, click, today);
+    if (op && click.subtypeId) s.toggleSubtype(click.habitId, toKey(today), click.subtypeId);
+    else if (op) s.toggleLog(click.habitId, toKey(today));
     return { synced: Promise.resolve() };
   }
   const raw = await AsyncStorage.getItem(SNAPSHOT_KEY).catch(() => null);
   const data = fromSnapshot(raw);
-  const op = widgetToggle(data, habitId, today);
+  const op = widgetClick(data, click, today);
   if (!op) return { synced: Promise.resolve() };
   // Igual que en la app: primero en local y a la cola; el store la aplicará al recargar.
   await AsyncStorage.setItem(SNAPSHOT_KEY, toSnapshot(applyOp(data, op))).catch(() => {});
@@ -87,23 +89,23 @@ async function toggle(habitId: string): Promise<{ synced: Promise<void> }> {
 /** Los toques se atienden de uno en uno, en orden. */
 let queue: Promise<unknown> = Promise.resolve();
 
-async function handle({ widgetAction, clickAction, clickActionData, renderWidget }: WidgetTaskHandlerProps) {
+async function handle({ widgetInfo, widgetAction, clickAction, clickActionData, renderWidget }: WidgetTaskHandlerProps) {
   if (widgetAction === 'WIDGET_DELETED') return;
   if (widgetAction === 'WIDGET_CLICK' && clickAction === TOGGLE) {
-    const habitId = clickActionData?.habitId;
+    const { habitId, subtypeId } = clickActionData ?? {};
     if (typeof habitId === 'string') {
-      const { synced } = await toggle(habitId);
+      const { synced } = await toggle(typeof subtypeId === 'string' ? { habitId, subtypeId } : { habitId });
       // Se redibuja al instante y después se espera al envío.
-      renderWidget(await view());
+      renderWidget(await view(widgetInfo.width));
       await synced;
       return;
     }
   }
-  renderWidget(await view());
+  renderWidget(await view(widgetInfo.width));
 }
 
 function refresh() {
-  void requestWidgetUpdate({ widgetName: WIDGET_NAME, renderWidget: view }).catch(() => {});
+  void requestWidgetUpdate({ widgetName: WIDGET_NAME, renderWidget: (info) => view(info.width) }).catch(() => {});
 }
 
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -138,7 +140,7 @@ export function registerWidget() {
       return;
     }
     if (s.status !== 'ready') return;
-    if (prev.status === 'ready' && s.habits === prev.habits && s.logs === prev.logs) return;
+    if (prev.status === 'ready' && s.habits === prev.habits && s.logs === prev.logs && s.subtypeLogs === prev.subtypeLogs) return;
     scheduleSave();
   });
 
