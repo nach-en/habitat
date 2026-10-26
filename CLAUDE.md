@@ -20,8 +20,9 @@ Expo cambia mucho entre SDK: antes de usar una API de Expo/RN, consulta la docum
 ```
 app/                  rutas (expo-router): _layout, index, login, account, habit/new, habit/[id] (detalle), habit/[id]/edit
 src/components/       HabitCard, CheckButton, HabitGrid (Skia), HabitForm, DateField, MonthCalendar, SubtypePicker, SubtypeDayChips, Chip, icons.ts
-src/lib/              dates, frequency, streaks, grid, calendar, format, ops, rows, subtypes, validation (puros) · supabase, auth, outbox, notifications
+src/lib/              dates, frequency, streaks, grid, calendar, format, ops, rows, subtypes, validation, widget (puros) · supabase, auth, outbox, notifications
 src/store/habits.ts   Zustand + sincronización con Supabase
+src/widget/           widget Android "Hoy" (react-native-android-widget); no-op en web/iOS
 src/theme/tokens.ts   tokens de color, medidas, fuentes
 src/types.ts          tipos compartidos
 supabase/migrations/  SQL
