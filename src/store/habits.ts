@@ -37,6 +37,8 @@ type HabitsState = HabitsData & {
   toggleLog: (habitId: string, day: DayKey) => void;
   /** Marca o quita un subtipo en `day`. Quitar el último desmarca el día. */
   toggleSubtype: (habitId: string, day: DayKey, subtypeId: string) => void;
+  /** Marca subtipos que faltan (Health Connect). Solo añade: no desmarca ni mueve el inicio. */
+  addSubtypeLogs: (marks: { habitId: string; day: DayKey; subtypeId: string }[]) => void;
   /** Crea un hábito con `created_on` = hoy (o el elegido) y devuelve su id. */
   addHabit: (input: HabitInput) => string;
   updateHabit: (id: string, input: HabitInput) => void;
@@ -180,6 +182,14 @@ export const useHabits = create<HabitsState>()((set, get) => {
         commit({ kind: 'setLog', habitId, day, done: false });
       } else {
         commit({ kind: 'setSubtype', habitId, day, subtypeId, on: false });
+      }
+    },
+
+    addSubtypeLogs: (marks) => {
+      for (const { habitId, day, subtypeId } of marks) {
+        if (!get().habits.some((h) => h.id === habitId)) continue;
+        if (get().subtypeLogs[habitId]?.[day]?.includes(subtypeId)) continue;
+        commit({ kind: 'setSubtype', habitId, day, subtypeId, on: true });
       }
     },
 

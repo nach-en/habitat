@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HealthSection } from '@/components/HealthSection';
+import { healthSupported } from '@/health';
 import { signOut } from '@/lib/auth';
 import { confirmDestructive } from '@/lib/confirm';
 import { closeSheet } from '@/lib/navigation';
@@ -50,13 +52,14 @@ export default function AccountScreen() {
         </Pressable>
       </View>
 
-      <View style={{ padding: 16, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16, gap: 16 }}>
         <Text style={{ fontFamily: fonts.regular, fontSize: 15, color: t.muted, lineHeight: 21 }}>
           Tus hábitos se guardan en tu cuenta. Entra con el mismo email en otro dispositivo para verlos allí.
         </Text>
         <View className="rounded-2xl bg-card px-4 py-3">
           <Text style={{ fontFamily: fonts.medium, fontSize: 16, color: t.text }}>{email ?? '—'}</Text>
         </View>
+        {healthSupported && <HealthSection />}
         <Pressable
           onPress={onSignOut}
           disabled={busy}
@@ -71,7 +74,7 @@ export default function AccountScreen() {
           )}
         </Pressable>
         {error && <Text style={{ fontFamily: fonts.regular, fontSize: 13.5, color: '#e5484d' }}>{error}</Text>}
-      </View>
+      </ScrollView>
     </View>
   );
 }
