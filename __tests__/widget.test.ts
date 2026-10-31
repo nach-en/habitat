@@ -41,11 +41,19 @@ describe('todayRows', () => {
     expect(rows[1]).toMatchObject({ done: false, detail: 'Racha 1 d' });
   });
 
-  it('semanal: progreso de la semana y desaparece al cumplir si hoy no se hizo', () => {
+  it('semanal: progreso de la semana y sigue saliendo aunque ya haya cumplido', () => {
     const h = habit({ frequency: 'week', timesPerWeek: 2 });
     expect(todayRows(data([h, logs('2026-10-05')]), today)[0]?.detail).toBe('1/2 esta semana');
-    expect(todayRows(data([h, logs('2026-10-05', '2026-10-06')]), today)).toEqual([]);
+    expect(todayRows(data([h, logs('2026-10-05', '2026-10-06')]), today)[0]).toMatchObject({
+      done: false,
+      detail: '2/2 esta semana',
+    });
     expect(todayRows(data([h, logs('2026-10-05', '2026-10-07')]), today)[0]?.done).toBe(true);
+  });
+
+  it('el contador no cuenta un semanal ya cumplido y sin hacer hoy', () => {
+    const h = habit({ frequency: 'week', timesPerWeek: 2 });
+    expect(todaySummary(data([h, logs('2026-10-05', '2026-10-06')]), today)).toEqual({ done: 0, total: 0 });
   });
 
   it('no muestra hábitos que empiezan después de hoy', () => {

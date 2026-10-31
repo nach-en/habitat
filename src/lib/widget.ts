@@ -1,6 +1,6 @@
 import type { DayKey, Habit } from '@/types';
 import { daysBetween, fromKey, toKey } from './dates';
-import { isDueToday, isScheduled, todayCounts, weekCount } from './frequency';
+import { isScheduled, todayCounts, weekCount } from './frequency';
 import { computeStreak } from './streaks';
 import { pickerSubtypes, type SubtypeLogs } from './subtypes';
 import type { HabitsData, Op } from './ops';
@@ -30,10 +30,11 @@ export type WidgetRow = {
 /** Toque en el check (`subtypeId` ausente) o en un chip de subtipo. */
 export type WidgetClick = { habitId: string; subtypeId?: string };
 
-/** ¿Sale el hábito en la lista de hoy? */
-function showsToday(habit: Habit, logs: Set<DayKey>, today: Date): boolean {
-  if (habit.goal === 'build') return isDueToday(habit, logs, today);
-  // A dejar: desde su inicio y en los días que se siguen.
+/**
+ * ¿Sale el hábito en la lista de hoy? Desde su inicio y en sus días; los
+ * semanales, todos los días aunque ya hayan cumplido (para poder marcar uno más).
+ */
+function showsToday(habit: Habit, today: Date): boolean {
   return daysBetween(fromKey(habit.createdOn), today) >= 0 && isScheduled(habit, today);
 }
 
@@ -52,7 +53,7 @@ export function todayRows(data: HabitsData, today: Date): WidgetRow[] {
   const rows: WidgetRow[] = [];
   for (const habit of data.habits) {
     const logs = data.logs[habit.id] ?? new Set<DayKey>();
-    if (!showsToday(habit, logs, today)) continue;
+    if (!showsToday(habit, today)) continue;
     const marked = data.subtypeLogs[habit.id]?.[key] ?? [];
     rows.push({
       id: habit.id,
