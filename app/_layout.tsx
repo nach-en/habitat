@@ -14,6 +14,7 @@ import {
 import { useTokens } from '@/theme/tokens';
 import { useHabits } from '@/store/habits';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { registerHealthSync } from '@/health';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,6 +42,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void useHabits.getState().init();
+    registerHealthSync();
   }, []);
 
   useEffect(() => {

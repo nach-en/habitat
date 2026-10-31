@@ -18,7 +18,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.nachen.habitat"
+      "package": "com.nachen.habitat",
+      "permissions": [
+        "android.permission.health.READ_EXERCISE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -72,6 +75,15 @@
               "updatePeriodMillis": 1800000
             }
           ]
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
         }
       ]
     ],
